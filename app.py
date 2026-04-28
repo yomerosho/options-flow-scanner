@@ -832,24 +832,36 @@ st.markdown(f"""
 # ── Countdown ─────────────────────────────────────────────────────────────────
 
 if auto_on:
-    _cur_session = PremarketScanner.current_session()
-    _last_lbl    = st.session_state.scan_timestamp or st.session_state.pm_timestamp or "—"
+    session_now = PremarketScanner.current_session()
 
-    _schedule = {
-        "PRE-MARKET":  "🌅 GitHub Actions scanning every 5 min · Check email for alerts",
-        "MARKET":      "⚡ GitHub Actions scanning every 15 min · Check email for alerts",
-        "AFTER-HOURS": "🌙 GitHub Actions scanning every 10 min · Check email for alerts",
-        "WEEKEND":     "💤 Weekend — GitHub Actions paused until Monday 3:30 AM CST",
-        "CLOSED":      "● Closed — GitHub Actions resumes at 3:30 AM CST",
-    }
-    _msg = _schedule.get(_cur_session, "📡 Auto-scan active")
-
-    st.markdown(f"""
-    <div class="countdown">
-      {_msg}
-      {"&nbsp;·&nbsp; Last manual scan: <b>" + _last_lbl + "</b>" if _last_lbl != "—" else ""}
-      &nbsp;·&nbsp; {len(st.session_state.index_list) + len(st.session_state.stock_list)} tickers
-    </div>""", unsafe_allow_html=True)
+    if session_now in ("PRE-MARKET", "AFTER-HOURS"):
+        # Show PM/AH countdown
+        if st.session_state.last_pm_scan is None:
+            st.session_state.last_pm_scan = datetime.now()
+        pm_secs = next_pm_scan_secs(session_now)
+        pm_m, pm_s = pm_secs // 60, pm_secs % 60
+        interval_lbl = "5 min" if session_now == "PRE-MARKET" else "10 min"
+        last_lbl = st.session_state.pm_timestamp or "pending first scan"
+        st.markdown(f"""
+        <div class="countdown">
+          {"🌅" if session_now == "PRE-MARKET" else "🌙"} {session_now} auto-scan every {interval_lbl}
+          &nbsp;·&nbsp; Next in <b>{pm_m:02d}:{pm_s:02d}</b>
+          &nbsp;·&nbsp; Last: <b>{last_lbl}</b>
+        </div>""", unsafe_allow_html=True)
+    else:
+        # Show 15-min intraday countdown
+        if st.session_state.last_scan_time is None:
+            st.session_state.last_scan_time = datetime.now()
+        secs = next_scan_secs(15)
+        m, s = secs // 60, secs % 60
+        last_lbl = st.session_state.scan_timestamp or "pending first scan"
+        st.markdown(f"""
+        <div class="countdown">
+          ⚡ Market hours — auto-scan every 15 min
+          &nbsp;·&nbsp; Next in <b>{m:02d}:{s:02d}</b>
+          &nbsp;·&nbsp; Last: <b>{last_lbl}</b>
+          &nbsp;·&nbsp; {len(st.session_state.index_list) + len(st.session_state.stock_list)} tickers
+        </div>""", unsafe_allow_html=True)
 
 # ── Run scan ──────────────────────────────────────────────────────────────────
 
@@ -967,11 +979,36 @@ if pm_scan_btn:
         st.session_state.pm_session   = PremarketScanner.current_session()
         status.update(label="✅ Pre-market scan complete!", state="complete")
 
-# ── Note: Auto-scan scheduling is handled by GitHub Actions ──────────────────
-# The app's "Auto-scan ON" toggle just shows the status bar countdown
-# and keeps the page refreshing to update the clock.
-# For in-app scanning, use the manual scan buttons in the sidebar.
+# ── Auto-scan trigger — fires based on current session ────────────────────────
 _session_now = PremarketScanner.current_session()
+
+# Pre-market auto-scan (every 5 min, 4AM-9:30AM ET)
+if auto_on and _session_now == "PRE-MARKET" and next_pm_scan_secs("PRE-MARKET") == 0:
+    with st.spinner("🌅 Auto-scanning pre-market..."):
+        _pm_s  = PremarketScanner(cfg)
+        _df_pm = _pm_s.run()
+        st.session_state.pm_results   = _df_pm
+        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
+        st.session_state.pm_session   = "PRE-MARKET"
+        st.session_state.last_pm_scan = datetime.now()
+        if send_alerts and gmail_user and gmail_pass and alert_email:
+            pass  # PM alerts handled separately
+
+# After-hours auto-scan (every 10 min, 4PM-8PM ET)
+if auto_on and _session_now == "AFTER-HOURS" and next_pm_scan_secs("AFTER-HOURS") == 0:
+    with st.spinner("🌙 Auto-scanning after-hours..."):
+        _pm_s  = PremarketScanner(cfg)
+        _df_pm = _pm_s.run()
+        st.session_state.pm_results   = _df_pm
+        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
+        st.session_state.pm_session   = "AFTER-HOURS"
+        st.session_state.last_pm_scan = datetime.now()
+
+# 15-min intraday auto-scan (market hours only)
+if auto_on and is_open and next_scan_secs(15) == 0:
+    with st.spinner("🔄 Auto-scanning..."):
+        do_scan()
+    # Don't rerun — results are already in session state and will render below
 
 # ── Results tabs ─────────────────────────────────────────────────────────────
 
@@ -1375,10 +1412,12 @@ with tab3:
 
 # ── Auto-refresh ──────────────────────────────────────────────────────────────
 
-# Simple page refresh every 60 seconds to update countdown
-# Does NOT trigger auto-scan - that's handled by the manual scan buttons
 if auto_on:
-    st.markdown('<meta http-equiv="refresh" content="60">', unsafe_allow_html=True)
+    try:
+        from streamlit_autorefresh import st_autorefresh
+        st_autorefresh(interval=30_000, limit=None, key="autorefresh")
+    except ImportError:
+        st.markdown('<meta http-equiv="refresh" content="30">', unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 
