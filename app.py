@@ -543,6 +543,10 @@ DEFAULTS = {
     "last_scan_time":  None,
     "scan_timestamp":  None,
     "auto_enabled":    True,
+    "user_name":       "",
+    "user_email":      "",
+    "user_tickers":    [],
+    "user_setup_done": False,
     "last_alert":      "—",
     "email_error":     None,
     "daily_results":   None,
@@ -583,6 +587,47 @@ for k, v in DEFAULTS.items():
 
 with st.sidebar:
     st.markdown("## 🎯 Options Flow")
+    st.markdown("---")
+
+    # ── User Profile ──────────────────────────────────────────────────────────
+    st.markdown("### 👤 My Settings")
+    with st.expander("Set up your profile", expanded=not st.session_state.user_setup_done):
+        user_name  = st.text_input("Your name",
+                                   value=st.session_state.user_name,
+                                   placeholder="e.g. John")
+        user_email = st.text_input("Your email (for alerts)",
+                                   value=st.session_state.user_email,
+                                   placeholder="you@email.com")
+        st.markdown("**Add your own tickers** (on top of the default list):")
+        user_tickers_raw = st.text_input(
+            "Extra tickers (comma separated)",
+            value=",".join(st.session_state.user_tickers),
+            placeholder="e.g. HOOD, RDDT, IONQ"
+        )
+        if st.button("💾 Save My Settings", key="save_profile"):
+            st.session_state.user_name      = user_name.strip()
+            st.session_state.user_email     = user_email.strip().lower()
+            st.session_state.user_tickers   = [
+                t.strip().upper()
+                for t in user_tickers_raw.split(",")
+                if t.strip()
+            ]
+            st.session_state.user_setup_done = True
+            st.success(f"✅ Saved! Welcome {user_name or 'trader'} 👋")
+            st.rerun()
+
+    if st.session_state.user_setup_done:
+        name_lbl   = st.session_state.user_name or "Trader"
+        email_lbl  = st.session_state.user_email or "—"
+        extras     = len(st.session_state.user_tickers)
+        st.markdown(f"""
+        <div style='background:#0e1520;border:1px solid #1a2535;border-radius:8px;
+                    padding:10px 14px;font-family:"JetBrains Mono",monospace;font-size:0.75rem;'>
+          <span style='color:#4af0c4;'>👤 {name_lbl}</span><br>
+          <span style='color:#8090a0;'>📧 {email_lbl}</span><br>
+          <span style='color:#8090a0;'>📈 {extras} personal ticker(s) added</span>
+        </div>""", unsafe_allow_html=True)
+
     st.markdown("---")
 
     # ── Watchlist editor ──────────────────────────────────────────────────────
@@ -718,9 +763,15 @@ alpaca_key    = _alpaca_key_default    or st.session_state.alpaca_key_val
 alpaca_secret = _alpaca_secret_default or st.session_state.alpaca_secret_val
 use_alpaca    = bool(alpaca_key)  # auto-enable if keys available
 
+# Merge user personal tickers into stock list (no duplicates)
+_user_extras  = st.session_state.get("user_tickers", [])
+_merged_stocks = list(dict.fromkeys(
+    st.session_state.stock_list + _user_extras
+))
+
 cfg = ScannerConfig(
     index_tickers   = st.session_state.index_list,
-    stock_tickers   = st.session_state.stock_list,
+    stock_tickers   = _merged_stocks,
     vol_surge_ratio = vol_surge,
     rsi_oversold    = float(rsi_lo),
     rsi_overbought  = float(rsi_hi),
