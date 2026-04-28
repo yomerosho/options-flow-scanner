@@ -5,3 +5,5 @@
 # Example: john@gmail.com,John Smith
 
 yshobowa@gmail.com,Yomi
+Pamelaabina24@gmail.com, Pamela
+Cenezuagu@globalinconsulting.com, Obi
