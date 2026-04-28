@@ -685,9 +685,11 @@ with st.sidebar:
             st.caption("Using yfinance (15-min delayed)")
 
     st.markdown("---")
-    scan_btn       = st.button("🔍 Scan Now (15-min)")
-    daily_scan_btn = st.button("🌙 After-Hours Scan (1-hr)")
-    pm_scan_btn    = st.button("🌅 Pre-Market / AH Scan")
+    scan_all_btn   = st.button("🚀 Scan All (All 3)", type="primary")
+    st.markdown("---")
+    scan_btn       = st.button("🔍 15-min Intraday")
+    daily_scan_btn = st.button("🌙 After-Hours (1-hr)")
+    pm_scan_btn    = st.button("🌅 Pre-Market / AH")
 
     st.markdown(f"""
     <div style='margin-top:12px;font-size:0.7rem;color:#c0ccd8;line-height:1.9;'>
@@ -842,6 +844,59 @@ if daily_scan_btn:
             if sent:
                 st.session_state.last_alert = datetime.now().strftime("%H:%M:%S")
         status.update(label="✅ 1-hr scan complete!", state="complete")
+
+# ── Scan All trigger ─────────────────────────────────────────────────────────
+if scan_all_btn:
+    with st.status("🚀 Running all 3 scanners...", expanded=True) as status:
+        pb  = st.progress(0)
+        stx = st.empty()
+
+        # 1. 15-min Intraday
+        stx.markdown("**[1/3]** ⚡ Running 15-min intraday scan...")
+        pb.progress(0.1)
+        def _cb1(idx, total, ticker):
+            pb.progress(0.1 + 0.3 * idx/total)
+            stx.markdown(f"**[1/3]** ⚡ 15-min — `{ticker}`")
+        _s1 = IntradayScanner(cfg)
+        _df1 = _s1.run(progress_cb=_cb1)
+        st.session_state.scan_results   = _df1
+        st.session_state.scan_timestamp = datetime.now().strftime("%H:%M:%S")
+        st.session_state.last_scan_time = datetime.now()
+
+        # 2. After-Hours 1-hr
+        stx.markdown("**[2/3]** 🌙 Running 1-hr after-hours scan...")
+        pb.progress(0.4)
+        def _cb2(idx, total, ticker):
+            pb.progress(0.4 + 0.3 * idx/total)
+            stx.markdown(f"**[2/3]** 🌙 1-hr — `{ticker}`")
+        _s2 = HourlyScanner(cfg)
+        _df2 = _s2.run(progress_cb=_cb2)
+        st.session_state.daily_results   = _df2
+        st.session_state.daily_timestamp = datetime.now().strftime("%H:%M:%S")
+
+        # 3. Pre-Market / AH
+        stx.markdown("**[3/3]** 🌅 Running pre-market scan...")
+        pb.progress(0.7)
+        def _cb3(idx, total, ticker):
+            pb.progress(0.7 + 0.3 * idx/total)
+            stx.markdown(f"**[3/3]** 🌅 Pre-market — `{ticker}`")
+        _s3 = PremarketScanner(cfg)
+        _df3 = _s3.run(progress_cb=_cb3)
+        st.session_state.pm_results   = _df3
+        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
+        st.session_state.pm_session   = PremarketScanner.current_session()
+        st.session_state.last_pm_scan = datetime.now()
+
+        pb.progress(1.0)
+        pb.empty(); stx.empty()
+
+        # Email all results
+        if send_alerts and gmail_user and gmail_pass and alert_email:
+            send_alert(_df1, gmail_user, gmail_pass, alert_email)
+            send_alert(_df2, gmail_user, gmail_pass, alert_email)
+
+        _total = (len(_df1) if not _df1.empty else 0) +                  (len(_df2) if not _df2.empty else 0) +                  (len(_df3) if not _df3.empty else 0)
+        status.update(label=f"✅ All 3 scans complete — {_total} total signals!", state="complete")
 
 # Pre-market / AH scan trigger
 if pm_scan_btn:
