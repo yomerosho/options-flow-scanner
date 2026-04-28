@@ -553,7 +553,7 @@ DEFAULTS = {
     "last_pm_scan":    None,
     "alpaca_key_val":    _alpaca_key_default,
     "alpaca_secret_val": _alpaca_secret_default,
-    "use_alpaca_val":    bool(_alpaca_key_default),
+    "use_alpaca_val":    True if _alpaca_key_default else False,
     # Watchlists (editable)
     "index_list": ["SPY","QQQ","IWM","DIA","TQQQ","SQQQ","XLF","EEM"],
     "stock_list": [
@@ -647,11 +647,17 @@ with st.sidebar:
 
     # ── Email alerts ──────────────────────────────────────────────────────────
     st.markdown("### 📧 Email Alerts (4★+)")
-    gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com", value=_gmail_user_default)
-    gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx", value=_gmail_pass_default)
-    alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com", value=_gmail_alert_default)
+    gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com")
+    gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx")
+    alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com")
     send_alerts = st.checkbox("Enable email alerts", value=False)
 
+    # Gmail status
+    _gmail_ready = bool(_gmail_user_default or gmail_user)
+    if _gmail_ready:
+        st.caption("✅ Gmail configured")
+    else:
+        st.caption("⚠️ Gmail not configured — alerts disabled")
     if st.session_state.email_error:
         st.error(f"Email error: {st.session_state.email_error}")
 
@@ -662,7 +668,7 @@ with st.sidebar:
     st.markdown("### 🦙 Alpaca API (Real-Time)")
     with st.expander("Configure Alpaca Keys", expanded=False):
         ak = st.text_input("API Key ID",  type="password",
-                           placeholder="PKXXXXXXXXXXXXXXXXXX", key="ak_input")
+                           placeholder="PKXXXXXXXXXXXXXXXXXX (or set in Streamlit secrets)", key="ak_input")
         sk = st.text_input("Secret Key",  type="password",
                            placeholder="XXXXXXXXXXXXXXXXXXXXXXXX", key="sk_input")
         ua = st.checkbox("Use Alpaca real-time data", value=False, key="ua_input")
@@ -697,12 +703,18 @@ with st.sidebar:
     <i style='color:#8090a0'>Pre-market: every 5 min · Market: every 15 min · After-hours: every 10 min</i><br><i style='color:#8090a0'>yfinance · 15-min delay · Not financial advice</i>
     </div>""", unsafe_allow_html=True)
 
+# ── Use secrets as fallback if sidebar fields are empty ──────────────────────
+# This means secrets work silently without ever being shown in the UI
+if not gmail_user  and _gmail_user_default:  gmail_user  = _gmail_user_default
+if not gmail_pass  and _gmail_pass_default:  gmail_pass  = _gmail_pass_default
+if not alert_email and _gmail_alert_default: alert_email = _gmail_alert_default
+
 # ── Config object ─────────────────────────────────────────────────────────────
 
-# Alpaca keys — read from session state (initialized in DEFAULTS above)
-alpaca_key    = st.session_state.alpaca_key_val
-alpaca_secret = st.session_state.alpaca_secret_val
-use_alpaca    = st.session_state.use_alpaca_val
+# Alpaca keys — prefer secrets over session state
+alpaca_key    = _alpaca_key_default    or st.session_state.alpaca_key_val
+alpaca_secret = _alpaca_secret_default or st.session_state.alpaca_secret_val
+use_alpaca    = bool(alpaca_key)  # auto-enable if keys available
 
 cfg = ScannerConfig(
     index_tickers   = st.session_state.index_list,
@@ -935,7 +947,7 @@ with tab1:
                 with st.spinner(f"Loading {sel} 15-min chart…"):
                     fig = build_chart(sel)
                 if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     st.caption("🟡 VWAP · 🟢 EMA9 · 🟣 EMA20 · 🔴 SMA50")
                 d      = row["Direction"]
                 border = "#4af0c4" if d=="CALL" else "#f04a6a"
@@ -1051,7 +1063,7 @@ with tab2:
                 with st.spinner(f"Loading {sel} daily chart…"):
                     fig = build_daily_chart(sel)
                 if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     st.caption("🟢 EMA9 · 🟣 EMA20 · 🟡 SMA50 · 🟠 SMA100 · 🔴 SMA200 · 🟡 VWAP")
                 d      = row["Direction"]
                 border = "#4af0c4" if d=="CALL" else "#f04a6a"
@@ -1219,7 +1231,7 @@ with tab3:
                 lambda v: "color:#4af0c4" if v=="CALL" else ("color:#f04a6a" if v=="PUT" else "color:#f5c842"),
                 subset=["Bias"] if "Bias" in available else []
             ).format({"Gap %": "{:+.2f}%"} if "Gap %" in available else {})
-            st.dataframe(styled, use_container_width=True)
+            st.dataframe(styled, width='stretch')
 
             # Export
             st.markdown("---")
