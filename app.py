@@ -782,14 +782,28 @@ cfg = ScannerConfig(
 
 # ── Header ────────────────────────────────────────────────────────────────────
 
-st.markdown("""
+_greeting_name = st.session_state.get("user_name", "")
+_greeting      = f"Welcome back, {_greeting_name} 👋" if _greeting_name else ""
+_user_extras   = st.session_state.get("user_tickers", [])
+_extra_count   = len(_user_extras)
+_total_tickers = len(st.session_state.get("stock_list",[])) + \
+                 len(st.session_state.get("index_list",[])) + _extra_count
+
+st.markdown(f"""
 <div style='padding:8px 0 12px 0;'>
   <h1 style='font-family:"Syne",sans-serif;font-size:2rem;font-weight:800;
              background:linear-gradient(90deg,#4af0c4,#4a9cf0);
              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
              margin:0;letter-spacing:-0.02em;'>Options Flow Dashboard</h1>
-  <p style='color:#3a5070;font-family:"JetBrains Mono",monospace;font-size:0.78rem;margin:4px 0 0 0;'>
-    15-min intraday scanner · indices + stocks · calls & puts · auto-scan · email alerts
+  <p style='color:#3a5070;font-family:"JetBrains Mono",monospace;
+            font-size:0.78rem;margin:4px 0 0 0;'>
+    15-min intraday · indices + stocks · calls & puts · auto-scan · email alerts
+    {"&nbsp;·&nbsp;<span style='color:#4af0c4;font-weight:600;'>" + _greeting + "</span>" if _greeting else ""}
+  </p>
+  <p style='color:#2a3a50;font-family:"JetBrains Mono",monospace;
+            font-size:0.72rem;margin:2px 0 0 0;'>
+    Scanning {_total_tickers} tickers
+    {"&nbsp;·&nbsp;" + str(_extra_count) + " personal ticker(s) added" if _extra_count else ""}
   </p>
 </div>""", unsafe_allow_html=True)
 
