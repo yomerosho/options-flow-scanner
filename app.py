@@ -542,7 +542,7 @@ DEFAULTS = {
     "scan_results":    None,
     "last_scan_time":  None,
     "scan_timestamp":  None,
-    "auto_enabled":    False,
+    "auto_enabled":    True,
     "last_alert":      "—",
     "email_error":     None,
     "daily_results":   None,
@@ -650,7 +650,7 @@ with st.sidebar:
     gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com")
     gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx")
     alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com")
-    send_alerts = st.checkbox("Enable email alerts", value=False)
+    send_alerts = st.checkbox("Enable email alerts", value=True)
 
     # Gmail status
     _gmail_ready = bool(_gmail_user_default or gmail_user)
