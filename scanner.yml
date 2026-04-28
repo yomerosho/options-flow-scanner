@@ -1,22 +1,22 @@
 name: Options Flow Auto-Scanner
 
 on:
+  # ── Pre-market: every 5 min, 3:30–8:30 AM CST (09:30–14:30 UTC) Mon–Fri ────
   schedule:
-    # Pre-market: every 5 min, 3:30-8:30 AM CST (09:30-14:30 UTC) Mon-Fri
     - cron: '30,35,40,45,50,55 9 * * 1-5'
     - cron: '0,5,10,15,20,25,30,35,40,45,50,55 10,11,12,13 * * 1-5'
-    - cron: '0,5,10,15,20,25 14 * * 1-5'
+    - cron: '0,5,10,15,20,25,30 14 * * 1-5'
 
-    # Market hours: every 15 min, 8:30 AM-2:00 PM CST (14:30-20:00 UTC) Mon-Fri
-    - cron: '30,45 14 * * 1-5'
+    # ── Market hours: every 15 min, 8:30 AM–2:00 PM CST (14:30–20:00 UTC) ────
+    - cron: '45 14 * * 1-5'
     - cron: '0,15,30,45 15,16,17,18,19 * * 1-5'
     - cron: '0 20 * * 1-5'
 
-    # After-hours: every 10 min, 2:00-6:00 PM CST (20:00-00:00 UTC) Mon-Fri
-    - cron: '0,10,20,30,40,50 20,21,22,23 * * 1-5'
+    # ── After-hours: every 10 min, 2:00–6:00 PM CST (20:00–00:00 UTC) ─────────
+    - cron: '10,20,30,40,50 20,21,22,23 * * 1-5'
     - cron: '0,10,20,30,40,50 0 * * 2-6'
 
-  workflow_dispatch:  # Allow manual trigger from GitHub UI
+  workflow_dispatch:  # Manual trigger from GitHub UI anytime
 
 jobs:
   scan:
@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Cache pip dependencies
+      - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
@@ -40,33 +40,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
-
-      - name: Determine current session
-        id: session
-        run: |
-          python3 << 'PYEOF'
-          import pytz
-          from datetime import datetime
-          ET  = pytz.timezone("America/New_York")
-          now = datetime.now(ET)
-          h   = now.hour + now.minute / 60
-          wd  = now.weekday()
-
-          if wd >= 5:
-              session = "WEEKEND"
-          elif 4.0 <= h < 9.5:
-              session = "PRE-MARKET"
-          elif 9.5 <= h < 16.0:
-              session = "MARKET"
-          elif 16.0 <= h < 20.0:
-              session = "AFTER-HOURS"
-          else:
-              session = "CLOSED"
-
-          print(f"Current session: {session} at {now.strftime('%H:%M ET')}")
-          with open("session.txt", "w") as f:
-              f.write(session)
-          PYEOF
 
       - name: Run scanner
         env:
@@ -76,4 +49,3 @@ jobs:
           GMAIL_PASS:    ${{ secrets.GMAIL_PASS }}
           GMAIL_TO:      ${{ secrets.GMAIL_TO }}
         run: python3 github_scanner.py
-

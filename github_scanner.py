@@ -146,22 +146,67 @@ def build_email_html(results: dict, session: str, scan_time: str) -> str:
     </div></body></html>"""
 
 
+def load_subscribers() -> list:
+    """Load subscriber list from subscribers.txt"""
+    subscribers = []
+    try:
+        with open("subscribers.txt", "r") as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comments
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split(",", 1)
+                email = parts[0].strip()
+                name  = parts[1].strip() if len(parts) > 1 else email.split("@")[0]
+                if "@" in email:
+                    subscribers.append({"email": email, "name": name})
+    except FileNotFoundError:
+        print("⚠️ subscribers.txt not found — using GMAIL_TO only")
+        if GMAIL_TO:
+            subscribers.append({"email": GMAIL_TO, "name": "Trader"})
+    return subscribers
+
+
+def build_personalized_html(html_template: str, name: str) -> str:
+    """Add personal greeting to email."""
+    greeting = (
+        "<div style='background:#0a1f18;border-left:3px solid #4af0c4;"
+        "padding:10px 16px;margin-bottom:16px;font-family:monospace;"
+        "font-size:0.85rem;color:#4af0c4;border-radius:0 6px 6px 0;'>"
+        f"Hey {name}! Here are your options flow alerts 👋"
+        "</div>"
+    )
+    anchor = '<div style="max-width:900px;margin:0 auto;padding:24px;">'
+    return html_template.replace(anchor, anchor + greeting, 1)
+
+
 def send_email(html: str, subject: str):
-    if not all([GMAIL_USER, GMAIL_PASS, GMAIL_TO]):
+    if not all([GMAIL_USER, GMAIL_PASS]):
         print("⚠️ Gmail credentials missing — skipping email")
         return
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = GMAIL_USER
-        msg["To"]      = GMAIL_TO
-        msg.attach(MIMEText(html, "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(GMAIL_USER, GMAIL_PASS)
-            s.sendmail(GMAIL_USER, GMAIL_TO, msg.as_string())
-        print(f"✅ Email sent to {GMAIL_TO}")
-    except Exception as e:
-        print(f"❌ Email failed: {e}")
+
+    subscribers = load_subscribers()
+    if not subscribers:
+        print("⚠️ No subscribers found")
+        return
+
+    print(f"📧 Sending to {len(subscribers)} subscriber(s)...")
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+        s.login(GMAIL_USER, GMAIL_PASS)
+        for sub in subscribers:
+            try:
+                personalized = build_personalized_html(html, sub["name"])
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = subject
+                msg["From"]    = GMAIL_USER
+                msg["To"]      = sub["email"]
+                msg.attach(MIMEText(personalized, "html"))
+                s.sendmail(GMAIL_USER, sub["email"], msg.as_string())
+                print(f"  ✅ Sent to {sub['name']} <{sub['email']}>")
+            except Exception as e:
+                print(f"  ❌ Failed for {sub['email']}: {e}")
 
 
 def main():

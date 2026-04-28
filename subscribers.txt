@@ -1,0 +1,7 @@
+# Options Flow Scanner — Email Subscribers
+# Add one email per line
+# Lines starting with # are comments
+# Format: email,name
+# Example: john@gmail.com,John Smith
+
+yshobowa@gmail.com,Yomi
