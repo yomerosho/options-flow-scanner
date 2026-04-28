@@ -1347,7 +1347,7 @@ with tab3:
             display_cols = ["Ticker","Type","Gap %","Direction","Bias","Conviction","Confidence","PM High","PM Low","Key Level","Vol Ratio","Notes"]
             available = [c for c in display_cols if c in df_pm.columns]
 
-            styled = df_pm[available].style.applymap(
+            styled = df_pm[available].style.map(
                 lambda v: "color:#4af0c4" if v=="CALL" else ("color:#f04a6a" if v=="PUT" else "color:#f5c842"),
                 subset=["Bias"] if "Bias" in available else []
             ).format({"Gap %": "{:+.2f}%"} if "Gap %" in available else {})
