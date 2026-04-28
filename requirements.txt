@@ -1,0 +1,9 @@
+yfinance>=0.2.36
+pandas>=2.0.0
+pandas-ta>=0.3.14b
+numpy>=1.24.0
+streamlit>=1.32.0
+plotly>=5.20.0
+plyer>=2.1.0        # optional — desktop notifications
+pytz>=2023.3
+streamlit-autorefresh>=0.0.1
