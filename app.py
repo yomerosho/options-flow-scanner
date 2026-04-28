@@ -983,32 +983,39 @@ if pm_scan_btn:
 _session_now = PremarketScanner.current_session()
 
 # Pre-market auto-scan (every 5 min, 4AM-9:30AM ET)
-if auto_on and _session_now == "PRE-MARKET" and next_pm_scan_secs("PRE-MARKET") == 0:
-    with st.spinner("🌅 Auto-scanning pre-market..."):
-        _pm_s  = PremarketScanner(cfg)
-        _df_pm = _pm_s.run()
-        st.session_state.pm_results   = _df_pm
-        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
-        st.session_state.pm_session   = "PRE-MARKET"
-        st.session_state.last_pm_scan = datetime.now()
-        if send_alerts and gmail_user and gmail_pass and alert_email:
-            pass  # PM alerts handled separately
+if auto_on and _session_now == "PRE-MARKET":
+    if next_pm_scan_secs("PRE-MARKET") == 0:
+        _pm_elapsed = (datetime.now() - st.session_state.last_pm_scan).total_seconds() if st.session_state.last_pm_scan else 999
+        if _pm_elapsed >= 4 * 60:
+            with st.spinner("🌅 Auto-scanning pre-market..."):
+                _pm_s  = PremarketScanner(cfg)
+                _df_pm = _pm_s.run()
+                st.session_state.pm_results   = _df_pm
+                st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
+                st.session_state.pm_session   = "PRE-MARKET"
+                st.session_state.last_pm_scan = datetime.now()
 
 # After-hours auto-scan (every 10 min, 4PM-8PM ET)
-if auto_on and _session_now == "AFTER-HOURS" and next_pm_scan_secs("AFTER-HOURS") == 0:
-    with st.spinner("🌙 Auto-scanning after-hours..."):
-        _pm_s  = PremarketScanner(cfg)
-        _df_pm = _pm_s.run()
-        st.session_state.pm_results   = _df_pm
-        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
-        st.session_state.pm_session   = "AFTER-HOURS"
-        st.session_state.last_pm_scan = datetime.now()
+if auto_on and _session_now == "AFTER-HOURS":
+    if next_pm_scan_secs("AFTER-HOURS") == 0:
+        _ah_elapsed = (datetime.now() - st.session_state.last_pm_scan).total_seconds() if st.session_state.last_pm_scan else 999
+        if _ah_elapsed >= 9 * 60:
+            with st.spinner("🌙 Auto-scanning after-hours..."):
+                _pm_s  = PremarketScanner(cfg)
+                _df_pm = _pm_s.run()
+                st.session_state.pm_results   = _df_pm
+                st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
+                st.session_state.pm_session   = "AFTER-HOURS"
+                st.session_state.last_pm_scan = datetime.now()
 
 # 15-min intraday auto-scan (market hours only)
-if auto_on and is_open and next_scan_secs(15) == 0:
-    with st.spinner("🔄 Auto-scanning..."):
-        do_scan()
-    # Don't rerun — results are already in session state and will render below
+if auto_on and is_open:
+    _secs_left = next_scan_secs(15)
+    if _secs_left == 0 and st.session_state.last_scan_time is not None:
+        _elapsed = (datetime.now() - st.session_state.last_scan_time).total_seconds()
+        if _elapsed >= 14 * 60:  # At least 14 min since last scan
+            with st.spinner("🔄 Auto-scanning..."):
+                do_scan()
 
 # ── Results tabs ─────────────────────────────────────────────────────────────
 
