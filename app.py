@@ -574,7 +574,7 @@ DEFAULTS = {
         # Leveraged ETFs & sector
         "TSLL",
         # Sector ETFs
-        "XLF","XLK","XLE","SOXX",
+        "XLK","XLE","SOXX",
         # Individual high-vol stocks from your list
         "V","XOM",
     ],
@@ -1021,9 +1021,9 @@ tab1, tab2, tab3 = st.tabs(["⚡ 15-min Intraday Scanner", "🌙 After-Hours 1-h
 with tab1:
     if st.session_state.scan_results is not None:
         df    = st.session_state.scan_results
-        # Show 3★+ in display, email only sends 4★+
+        # Show 4★+ only
         if not df.empty and "Confidence" in df.columns:
-            df = df[df["Confidence"].str.len() >= 3]
+            df = df[df["Confidence"].str.len() >= 4]
         calls = df[df["Direction"]=="CALL"] if not df.empty else pd.DataFrame()
         puts  = df[df["Direction"]=="PUT"]  if not df.empty else pd.DataFrame()
         confluences = df[df["Confluence"]==True] if "Confluence" in df.columns else pd.DataFrame()
@@ -1136,9 +1136,9 @@ with tab2:
 
     if st.session_state.daily_results is not None:
         df    = st.session_state.daily_results
-        # Show 3★+ in display, email only sends 4★+
+        # Show 4★+ only
         if not df.empty and "Confidence" in df.columns:
-            df = df[df["Confidence"].str.len() >= 3]
+            df = df[df["Confidence"].str.len() >= 4]
         calls = df[df["Direction"]=="CALL"] if not df.empty else pd.DataFrame()
         puts  = df[df["Direction"]=="PUT"]  if not df.empty else pd.DataFrame()
         confluences = df[df["Confluence"]==True] if "Confluence" in df.columns else pd.DataFrame()
