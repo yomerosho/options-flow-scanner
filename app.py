@@ -19,6 +19,19 @@ import pytz
 
 from scanner import IntradayScanner, HourlyScanner, PremarketScanner, ScannerConfig, Indicators
 
+# ── Load secrets from Streamlit Cloud if available ────────────────────────────
+def get_secret(section, key, default=""):
+    try:
+        return st.secrets[section][key]
+    except:
+        return default
+
+_alpaca_key_default    = get_secret("alpaca", "key",      "")
+_alpaca_secret_default = get_secret("alpaca", "secret",   "")
+_gmail_user_default    = get_secret("gmail",  "user",     "")
+_gmail_pass_default    = get_secret("gmail",  "password", "")
+_gmail_alert_default   = get_secret("gmail",  "alert_to", "")
+
 # ── Page config ───────────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -538,9 +551,9 @@ DEFAULTS = {
     "pm_timestamp":    None,
     "pm_session":      "—",
     "last_pm_scan":    None,
-    "alpaca_key_val":    "",
-    "alpaca_secret_val": "",
-    "use_alpaca_val":    False,
+    "alpaca_key_val":    _alpaca_key_default,
+    "alpaca_secret_val": _alpaca_secret_default,
+    "use_alpaca_val":    bool(_alpaca_key_default),
     # Watchlists (editable)
     "index_list": ["SPY","QQQ","IWM","DIA","TQQQ","SQQQ","XLF","EEM"],
     "stock_list": [
@@ -634,9 +647,9 @@ with st.sidebar:
 
     # ── Email alerts ──────────────────────────────────────────────────────────
     st.markdown("### 📧 Email Alerts (4★+)")
-    gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com")
-    gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx")
-    alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com")
+    gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com", value=_gmail_user_default)
+    gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx", value=_gmail_pass_default)
+    alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com", value=_gmail_alert_default)
     send_alerts = st.checkbox("Enable email alerts", value=False)
 
     if st.session_state.email_error:
