@@ -993,7 +993,6 @@ if auto_on and _session_now == "PRE-MARKET" and next_pm_scan_secs("PRE-MARKET") 
         st.session_state.last_pm_scan = datetime.now()
         if send_alerts and gmail_user and gmail_pass and alert_email:
             pass  # PM alerts handled separately
-    st.rerun()
 
 # After-hours auto-scan (every 10 min, 4PM-8PM ET)
 if auto_on and _session_now == "AFTER-HOURS" and next_pm_scan_secs("AFTER-HOURS") == 0:
@@ -1004,13 +1003,12 @@ if auto_on and _session_now == "AFTER-HOURS" and next_pm_scan_secs("AFTER-HOURS"
         st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
         st.session_state.pm_session   = "AFTER-HOURS"
         st.session_state.last_pm_scan = datetime.now()
-    st.rerun()
 
 # 15-min intraday auto-scan (market hours only)
 if auto_on and is_open and next_scan_secs(15) == 0:
     with st.spinner("🔄 Auto-scanning..."):
         do_scan()
-    st.rerun()
+    # Don't rerun — results are already in session state and will render below
 
 # ── Results tabs ─────────────────────────────────────────────────────────────
 
