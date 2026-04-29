@@ -176,7 +176,7 @@ def next_pm_scan_secs(session):
     interval = 5 if session == "PRE-MARKET" else 10  # 5-min PM, 10-min AH
     return max(0, int(interval * 60 - (datetime.now() - last).total_seconds()))
 
-def next_scan_secs(interval_min=15):
+def next_scan_secs(interval_min=30):
     last = st.session_state.get("last_scan_time")
     if last is None: return 0
     return max(0, int(interval_min*60 - (datetime.now()-last).total_seconds()))
@@ -725,12 +725,13 @@ with st.sidebar:
             st.session_state.alpaca_secret_val = sk
             st.session_state.use_alpaca_val    = ua
             st.success("✅ Alpaca keys saved!")
-        if st.session_state.use_alpaca_val and st.session_state.alpaca_key_val:
-            st.success("✅ Real-time data active")
-        elif st.session_state.use_alpaca_val:
-            st.warning("⚠️ Enter keys above and save")
+
+        # Check status — prefer secrets over manually entered keys
+        _ak_active = _alpaca_key_default or st.session_state.alpaca_key_val
+        if _ak_active:
+            st.success("✅ Alpaca connected — real-time data active")
         else:
-            st.caption("Using yfinance (15-min delayed)")
+            st.caption("📊 Using yfinance (15-min delayed)")
 
     st.markdown("---")
     scan_all_btn   = st.button("🚀 Scan All", type="primary")
@@ -854,7 +855,7 @@ if auto_on:
         # Show 15-min intraday countdown
         if st.session_state.last_scan_time is None:
             st.session_state.last_scan_time = datetime.now()
-        secs = next_scan_secs(15)
+        secs = next_scan_secs(30)
         m, s = secs // 60, secs % 60
         last_lbl = st.session_state.scan_timestamp or "pending first scan"
         st.markdown(f"""
@@ -993,7 +994,7 @@ if auto_on and _session_now == "AFTER-HOURS" and next_pm_scan_secs("AFTER-HOURS"
         st.session_state.last_pm_scan = datetime.now()
 
 # 15-min intraday auto-scan (market hours only)
-if auto_on and is_open and next_scan_secs(15) == 0:
+if auto_on and is_open and next_scan_secs(30) == 0:
     with st.spinner("🔄 Auto-scanning..."):
         do_scan()
     # Don't rerun — results are already in session state and will render below
