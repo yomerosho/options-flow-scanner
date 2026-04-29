@@ -438,6 +438,7 @@ def signal_card(row):
     rsi      = str(row.get("RSI",""))
     vol      = str(row.get("Vol Ratio",""))
     notes    = str(row.get("Notes",""))
+    plan     = str(row.get("Plan",""))
     is_conf  = bool(row.get("Confluence", False))
     body_ok  = str(row.get("Body✓EMA9","—")) == "✅"
     stacked  = str(row.get("Signals",""))
@@ -475,7 +476,7 @@ def signal_card(row):
         f'<div style="font-size:0.88rem;color:#c0d0e0;margin-bottom:5px;font-weight:600;">{signal} → <span style="color:{dir_col};">Strike ${strike}</span></div>' +
         (f'<div style="margin:5px 0;">{pills}</div>' if pills else "") +
         f'<div style="font-size:0.75rem;color:#5a7a90;margin-top:4px;">VWAP ${vwap} | RSI {rsi} | Vol {vol}x</div>' +
-        f'<div style="font-size:0.74rem;color:#4a6a80;margin-top:3px;">{notes}</div>' +
+        (f'<div style="font-size:0.78rem;color:#f5c842;margin-top:5px;padding:4px 8px;background:#1a1a0a;border-radius:4px;">📋 {plan}</div>' if plan else "") +
         f'</div>'
     )
 
@@ -496,6 +497,8 @@ def daily_signal_card(row):
     sma_lv   = str(row.get("SMA Level","—"))
     iv_note  = str(row.get("IV Note",""))
     notes    = str(row.get("Notes",""))
+    plan     = str(row.get("Plan",""))
+    plan     = str(row.get("Plan",""))
     is_conf  = bool(row.get("Confluence", False))
     stacked  = str(row.get("Signals",""))
 
@@ -730,11 +733,10 @@ with st.sidebar:
             st.caption("Using yfinance (15-min delayed)")
 
     st.markdown("---")
-    scan_all_btn   = st.button("🚀 Scan All (All 3)", type="primary")
+    scan_all_btn   = st.button("🚀 Scan All", type="primary")
     st.markdown("---")
-    scan_btn       = st.button("🔍 15-min Intraday")
-    daily_scan_btn = st.button("🌙 After-Hours (1-hr)")
-    pm_scan_btn    = st.button("🌅 Pre-Market / AH")
+    scan_btn       = st.button("⚡ 1-hr Intraday Scan")
+    daily_scan_btn = st.button("🌙 After-Hours Daily Scan")
 
     st.markdown(f"""
     <div style='margin-top:12px;font-size:0.7rem;color:#c0ccd8;line-height:1.9;'>
@@ -797,7 +799,7 @@ st.markdown(f"""
              margin:0;letter-spacing:-0.02em;'>Options Flow Dashboard</h1>
   <p style='color:#3a5070;font-family:"JetBrains Mono",monospace;
             font-size:0.78rem;margin:4px 0 0 0;'>
-    15-min intraday · indices + stocks · calls & puts · auto-scan · email alerts
+    1-hr intraday · daily swing setups · calls & puts · email alerts
     {"&nbsp;·&nbsp;<span style='color:#4af0c4;font-weight:600;'>" + _greeting + "</span>" if _greeting else ""}
   </p>
   <p style='color:#2a3a50;font-family:"JetBrains Mono",monospace;
@@ -857,7 +859,7 @@ if auto_on:
         last_lbl = st.session_state.scan_timestamp or "pending first scan"
         st.markdown(f"""
         <div class="countdown">
-          ⚡ Market hours — auto-scan every 15 min
+          ⚡ Market hours — auto-scan every 30 min
           &nbsp;·&nbsp; Next in <b>{m:02d}:{s:02d}</b>
           &nbsp;·&nbsp; Last: <b>{last_lbl}</b>
           &nbsp;·&nbsp; {len(st.session_state.index_list) + len(st.session_state.stock_list)} tickers
@@ -866,7 +868,7 @@ if auto_on:
 # ── Run scan ──────────────────────────────────────────────────────────────────
 
 def do_scan():
-    scanner = IntradayScanner(cfg)
+    scanner = HourlyScanner(cfg)   # 1-hr bars for intraday swing entries
     pb  = st.progress(0)
     stx = st.empty()
 
@@ -893,13 +895,13 @@ if scan_btn:
 
 # Daily scan trigger
 if daily_scan_btn:
-    with st.status("🌙 Running after-hours 1-hr scan...", expanded=True) as status:
+    with st.status("🌙 Scanning daily candles for swing setups...", expanded=True) as status:
         pb  = st.progress(0)
         stx = st.empty()
         def dcb(idx, total, ticker):
             pb.progress(idx / total)
             stx.markdown(f"`[{idx}/{total}]` → **{ticker}**")
-        scanner  = HourlyScanner(cfg)
+        scanner  = DailyScanner(cfg)
         df_daily = scanner.run(progress_cb=dcb)
         pb.empty(); stx.empty()
         st.session_state.daily_results   = df_daily
@@ -922,7 +924,7 @@ if scan_all_btn:
         def _cb1(idx, total, ticker):
             pb.progress(0.1 + 0.3 * idx/total)
             stx.markdown(f"**[1/3]** ⚡ 15-min — `{ticker}`")
-        _s1 = IntradayScanner(cfg)
+        _s1 = HourlyScanner(cfg)   # 1-hr bars
         _df1 = _s1.run(progress_cb=_cb1)
         st.session_state.scan_results   = _df1
         st.session_state.scan_timestamp = datetime.now().strftime("%H:%M:%S")
@@ -934,7 +936,7 @@ if scan_all_btn:
         def _cb2(idx, total, ticker):
             pb.progress(0.4 + 0.3 * idx/total)
             stx.markdown(f"**[2/3]** 🌙 1-hr — `{ticker}`")
-        _s2 = HourlyScanner(cfg)
+        _s2 = DailyScanner(cfg)    # Daily candles for swing setups
         _df2 = _s2.run(progress_cb=_cb2)
         st.session_state.daily_results   = _df2
         st.session_state.daily_timestamp = datetime.now().strftime("%H:%M:%S")
@@ -963,21 +965,7 @@ if scan_all_btn:
         _total = (len(_df1) if not _df1.empty else 0) +                  (len(_df2) if not _df2.empty else 0) +                  (len(_df3) if not _df3.empty else 0)
         status.update(label=f"✅ All 3 scans complete — {_total} total signals!", state="complete")
 
-# Pre-market / AH scan trigger
-if pm_scan_btn:
-    with st.status("🌅 Scanning pre-market / after-hours data...", expanded=True) as status:
-        pb  = st.progress(0)
-        stx = st.empty()
-        def pmcb(idx, total, ticker):
-            pb.progress(idx / total)
-            stx.markdown(f"`[{idx}/{total}]` → **{ticker}**")
-        pm_scanner = PremarketScanner(cfg)
-        df_pm      = pm_scanner.run(progress_cb=pmcb)
-        pb.empty(); stx.empty()
-        st.session_state.pm_results   = df_pm
-        st.session_state.pm_timestamp = datetime.now().strftime("%H:%M:%S")
-        st.session_state.pm_session   = PremarketScanner.current_session()
-        status.update(label="✅ Pre-market scan complete!", state="complete")
+# Pre-market tab removed
 
 # ── Auto-scan trigger — fires based on current session ────────────────────────
 _session_now = PremarketScanner.current_session()
@@ -1013,7 +1001,7 @@ if auto_on and is_open and next_scan_secs(15) == 0:
 # ── Results tabs ─────────────────────────────────────────────────────────────
 
 st.markdown("---")
-tab1, tab2, tab3 = st.tabs(["⚡ 15-min Intraday Scanner", "🌙 After-Hours 1-hr Scanner", "🌅 Pre-Market & After-Hours"])
+tab1, tab2 = st.tabs(["⚡ 1-hr Intraday Scanner", "🌙 After-Hours Daily Scanner"])
 
 # ════════════════════════════════════════════════
 #  TAB 1 — 15-min Intraday
@@ -1053,7 +1041,7 @@ with tab1:
                     st.markdown(signal_card(row.to_dict()), unsafe_allow_html=True)
 
             st.markdown("---")
-            st.markdown("### 📊 Chart Explorer (15-min)")
+            st.markdown("### 📊 Chart Explorer (1-hr)")
             sel = st.selectbox("Select ticker", df["Ticker"].tolist(), key="intra_sel")
             if sel:
                 row = df[df["Ticker"]==sel].iloc[0]
@@ -1118,9 +1106,9 @@ with tab1:
         <div style='text-align:center;padding:60px 0;color:#2a3a50;'>
           <div style='font-size:3rem;'>⚡</div>
           <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#3a5070;'>
-            Click <b style='color:#4af0c4'>Scan Now (15-min)</b> in the sidebar
+            Click <b style='color:#4af0c4'>⚡ 1-hr Intraday Scan</b> in the sidebar
           </div>
-          <div style='font-size:0.78rem;margin-top:6px;'>Best between 9:45 AM – 3:45 PM ET</div>
+          <div style='font-size:0.78rem;margin-top:6px;'>Best between 9:30 AM – 3:45 PM ET</div>
         </div>""", unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════
@@ -1242,171 +1230,6 @@ with tab2:
           </div>
           <div style='font-size:0.78rem;margin-top:6px;'>
             1-hr candles · 5-day lookback · best for next-day trade planning
-          </div>
-        </div>""", unsafe_allow_html=True)
-
-# ════════════════════════════════════════════════
-#  TAB 3 — Pre-Market & After-Hours Intelligence
-# ════════════════════════════════════════════════
-with tab3:
-    session_now = PremarketScanner.current_session()
-
-    # Session banner
-    session_colors = {
-        "PRE-MARKET":  ("#f5c842", "🌅 PRE-MARKET SESSION"),
-        "AFTER-HOURS": ("#c087f8", "🌙 AFTER-HOURS SESSION"),
-        "MARKET":      ("#4af0c4", "⚡ MARKET OPEN"),
-        "WEEKEND":     ("#8090a0", "💤 WEEKEND"),
-        "CLOSED":      ("#f04a6a", "● CLOSED"),
-    }
-    s_color, s_label = session_colors.get(session_now, ("#8090a0","● UNKNOWN"))
-
-    st.markdown(f"""
-    <div style='background:#0e1520;border:1px solid #1a2535;border-radius:8px;
-                padding:12px 18px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;'>
-      <span style='color:{s_color};font-weight:700;'>{s_label}</span>
-      <span style='color:#3a5070;margin:0 12px;'>|</span>
-      <span style='color:#8090a0;font-size:0.8rem;'>
-        Pre-market: 4:00–9:30 AM ET &nbsp;·&nbsp; After-hours: 4:00–8:00 PM ET
-      </span>
-    </div>""", unsafe_allow_html=True)
-
-    # Info box
-    st.markdown("""
-    <div style='background:#0a1520;border:1px solid #1a2535;border-radius:8px;
-                padding:14px 18px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;font-size:0.78rem;color:#8090a0;'>
-      🌅 <b style='color:#e0e8f0'>Pre-Market & After-Hours Intelligence</b><br>
-      Identifies gap direction, key price levels, volume conviction, and opening bias (CALL/PUT/WAIT).<br>
-      Uses Alpaca real-time if connected · yfinance fallback (15-min delayed) · Works any time of day.
-    </div>""", unsafe_allow_html=True)
-
-    if st.session_state.pm_results is not None:
-        df_pm = st.session_state.pm_results
-
-        if not df_pm.empty:
-            # Filter by conviction
-            calls_pm = df_pm[df_pm["Bias"]=="CALL"]
-            puts_pm  = df_pm[df_pm["Bias"]=="PUT"]
-            waits_pm = df_pm[df_pm["Bias"]=="WAIT"]
-
-            st.caption(f"⏱ {st.session_state.pm_timestamp} · Session: {st.session_state.pm_session} · {len(df_pm)} tickers scanned")
-
-            c1,c2,c3,c4 = st.columns(4)
-            c1.metric("Total Scanned", len(df_pm))
-            c2.metric("🟢 CALL Bias",  len(calls_pm))
-            c3.metric("🔴 PUT Bias",   len(puts_pm))
-            c4.metric("⏳ WAIT",       len(waits_pm))
-
-            st.markdown("---")
-
-            # High conviction only first
-            high_conv = df_pm[df_pm["Conviction"]=="HIGH"]
-            if not high_conv.empty:
-                st.markdown("### 🔥 High Conviction Moves")
-                for _, r in high_conv.iterrows():
-                    gap    = float(r["Gap %"])
-                    bias   = str(r["Bias"])
-                    ticker = str(r["Ticker"])
-                    gap_col= "#4af0c4" if gap > 0 else "#f04a6a"
-                    bias_col= "#4af0c4" if bias=="CALL" else ("#f04a6a" if bias=="PUT" else "#f5c842")
-                    bias_icon= "▲" if bias=="CALL" else ("▼" if bias=="PUT" else "⏳")
-                    t_bg   = "#1a2a50" if r["Type"]=="INDEX" else "#2a1a40"
-                    t_col  = "#6ab0f0" if r["Type"]=="INDEX" else "#c083f8"
-                    st.markdown(f"""
-                    <div style='border-left:4px solid {gap_col};background:#0e1520;padding:14px 18px;border-radius:0 8px 8px 0;margin:6px 0;'>
-                      <div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;'>
-                        <span style='font-family:"JetBrains Mono",monospace;font-size:1.05rem;font-weight:700;color:#e0e8f0;'>{ticker}</span>
-                        <span style='background:{t_bg};color:{t_col};font-size:0.65rem;padding:1px 8px;border-radius:8px;'>{r["Type"]}</span>
-                        <span style='background:#1a3a50;color:{gap_col};font-family:"JetBrains Mono",monospace;font-size:0.8rem;font-weight:700;padding:2px 12px;border-radius:20px;'>
-                          {"+" if gap>0 else ""}{gap:.2f}% {r["Direction"]}
-                        </span>
-                        <span style='background:{"#0d3d28" if bias=="CALL" else ("#3d0d1a" if bias=="PUT" else "#2a2a10")};color:{bias_col};font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:20px;'>
-                          {bias_icon} {bias}
-                        </span>
-                        <span style='margin-left:auto;font-size:0.72rem;color:#f5c842;font-weight:700;'>🔥 {r["Conviction"]}</span>
-                      </div>
-                      <div style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;font-size:0.78rem;color:#8090a0;margin-bottom:6px;'>
-                        <div>Prev Close: <b style='color:#d4dce8;'>${r["Prev Close"]}</b></div>
-                        <div>Current: <b style='color:{gap_col};'>${r["Current"]}</b></div>
-                        <div>PM High: <b style='color:#d4dce8;'>${r["PM High"]}</b></div>
-                        <div>PM Low: <b style='color:#d4dce8;'>${r["PM Low"]}</b></div>
-                      </div>
-                      <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.78rem;color:#8090a0;margin-bottom:6px;'>
-                        <div>Key Level: <b style='color:#f5c842;'>${r["Key Level"]}</b></div>
-                        <div>PM Volume: <b style='color:#d4dce8;'>{r["Vol Ratio"]:.1f}x avg</b></div>
-                      </div>
-                      <div style='font-size:0.78rem;color:#a0b0c0;margin-top:4px;'>{r["Notes"]}</div>
-                    </div>""", unsafe_allow_html=True)
-
-            st.markdown("---")
-
-            # Full table
-            st.markdown("### 📋 All Tickers")
-            display_cols = ["Ticker","Type","Gap %","Direction","Bias","Conviction","Confidence","PM High","PM Low","Key Level","Vol Ratio","Notes"]
-            available = [c for c in display_cols if c in df_pm.columns]
-
-            styled = df_pm[available].style.map(
-                lambda v: "color:#4af0c4" if v=="CALL" else ("color:#f04a6a" if v=="PUT" else "color:#f5c842"),
-                subset=["Bias"] if "Bias" in available else []
-            ).format({"Gap %": "{:+.2f}%"} if "Gap %" in available else {})
-            st.dataframe(styled, width='stretch')
-
-            # Export
-            st.markdown("---")
-            st.markdown("### 📤 Export")
-            ex1, ex2 = st.columns(2)
-            with ex1:
-                csv_pm = df_pm[available].to_csv(index=False)
-                st.download_button("⬇️ Download CSV", csv_pm,
-                    file_name=f"premarket_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv", key="csv_pm")
-            with ex2:
-                if st.button("📧 Email Pre-Market Report", key="email_pm"):
-                    if gmail_user and gmail_pass and alert_email:
-                        # Build simple HTML email for pre-market
-                        pm_html = f"""<html><body style='background:#080b10;color:#d4dce8;font-family:monospace;'>
-                        <div style='max-width:800px;margin:0 auto;padding:24px;'>
-                        <h2 style='color:#f5c842;'>🌅 Pre-Market Intelligence — {st.session_state.pm_timestamp}</h2>
-                        <p style='color:#5a7a90;'>Session: {st.session_state.pm_session} · {len(calls_pm)} CALL bias · {len(puts_pm)} PUT bias · {len(waits_pm)} WAIT</p>
-                        <table style='width:100%;border-collapse:collapse;background:#0e1520;border:1px solid #1a2535;'>
-                        <tr style='background:#131922;color:#5a7a90;font-size:0.75rem;'>
-                          <th style='padding:8px;text-align:left;'>TICKER</th><th style='padding:8px;'>GAP%</th>
-                          <th style='padding:8px;'>BIAS</th><th style='padding:8px;'>CONVICTION</th>
-                          <th style='padding:8px;'>KEY LEVEL</th><th style='padding:8px;'>VOL</th>
-                          <th style='padding:8px;text-align:left;'>NOTES</th></tr>"""
-                        for _, r in df_pm.iterrows():
-                            gap   = float(r["Gap %"])
-                            gcol  = "#4af0c4" if gap > 0 else "#f04a6a"
-                            bcol  = "#4af0c4" if r["Bias"]=="CALL" else ("#f04a6a" if r["Bias"]=="PUT" else "#f5c842")
-                            pm_html += f"""<tr>
-                              <td style='padding:8px;font-weight:bold;color:#e0e8f0;'>{r["Ticker"]}</td>
-                              <td style='padding:8px;color:{gcol};text-align:center;'>{"+" if gap>0 else ""}{gap:.2f}%</td>
-                              <td style='padding:8px;color:{bcol};text-align:center;font-weight:bold;'>{r["Bias"]}</td>
-                              <td style='padding:8px;text-align:center;'>{r["Conviction"]}</td>
-                              <td style='padding:8px;text-align:center;'>${r["Key Level"]}</td>
-                              <td style='padding:8px;text-align:center;'>{r["Vol Ratio"]:.1f}x</td>
-                              <td style='padding:8px;font-size:0.75rem;'>{r["Notes"]}</td></tr>"""
-                        pm_html += """</table>
-                        <p style='color:#2a3a50;font-size:0.7rem;margin-top:16px;'>Not financial advice · Educational use only</p>
-                        </div></body></html>"""
-                        sent = send_export_email(pm_html,
-                            f"🌅 Pre-Market Report — {len(calls_pm)} CALL · {len(puts_pm)} PUT · {datetime.now(ET).strftime('%b %d %H:%M ET')}",
-                            gmail_user, gmail_pass, alert_email)
-                        if sent: st.success("✅ Email sent!")
-                        else:    st.error("❌ Check Gmail settings")
-                    else:
-                        st.warning("⚠️ Enter Gmail details in sidebar")
-        else:
-            st.info("No pre-market data found. Try again after 4:00 AM ET or check your Alpaca connection.")
-    else:
-        st.markdown("""
-        <div style='text-align:center;padding:60px 0;color:#2a3a50;'>
-          <div style='font-size:3rem;'>🌅</div>
-          <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#3a5070;'>
-            Click <b style='color:#f5c842;'>Pre-Market / AH Scan</b> in the sidebar
-          </div>
-          <div style='font-size:0.78rem;margin-top:6px;'>
-            Best times: 8:00–9:30 AM ET (pre-market) · 4:00–8:00 PM ET (after-hours)
           </div>
         </div>""", unsafe_allow_html=True)
 

@@ -21,11 +21,50 @@ logger = logging.getLogger(__name__)
 
 # ── Strike snapper ────────────────────────────────────────────────────────────
 
-def snap_strike(price: float, direction: str) -> float:
+def snap_strike(price: float, direction: str, ticker: str = "") -> float:
+    """
+    Find the nearest REAL options strike from the actual options chain.
+    Falls back to estimated interval if chain lookup fails.
+    """
+    # Try to get real strikes from yfinance options chain
+    if ticker:
+        try:
+            t = yf.Ticker(ticker)
+            expirations = t.options
+            if expirations:
+                # Use nearest expiry (1-2 weeks out)
+                chain = t.option_chain(expirations[0])
+                if direction == "CALL":
+                    strikes = sorted(chain.calls["strike"].tolist())
+                else:
+                    strikes = sorted(chain.puts["strike"].tolist())
+
+                if strikes:
+                    # For CALL: find nearest strike AT or just above price
+                    # For PUT: find nearest strike AT or just below price
+                    if direction == "CALL":
+                        above = [s for s in strikes if s >= price]
+                        below = [s for s in strikes if s < price]
+                        if above:
+                            return float(above[0])   # ATM or first OTM
+                        elif below:
+                            return float(below[-1])  # nearest ITM
+                    else:
+                        below = [s for s in strikes if s <= price]
+                        above = [s for s in strikes if s > price]
+                        if below:
+                            return float(below[-1])  # ATM or first OTM
+                        elif above:
+                            return float(above[0])   # nearest ITM
+        except Exception as e:
+            logger.debug(f"{ticker}: options chain lookup failed — {e}")
+
+    # Fallback: estimated interval if chain lookup fails
     if price < 25:     interval = 0.50
     elif price < 200:  interval = 2.50
     elif price < 500:  interval = 5.0
     else:              interval = 10.0
+
     if direction == "CALL":
         return round(np.ceil(price  / interval) * interval, 2)
     else:
@@ -471,7 +510,7 @@ class IntradayScanner:
             confluence       = is_confluence,
             stacked_signals  = stacked,
             confidence       = confidence,
-            suggested_strike = snap_strike(price, direction),
+            suggested_strike = snap_strike(price, direction, ticker),
             vwap             = round(vwap, 2),
             rsi              = round(rsi, 1),
             volume_ratio     = round(vol_r, 2),
@@ -899,7 +938,7 @@ class HourlyScanner:
             confluence       = is_confluence,
             stacked_signals  = stacked,
             confidence       = conf,
-            suggested_strike = snap_strike(float(c), direction),
+            suggested_strike = snap_strike(float(c), direction, ticker),
             suggested_expiry = expiry,
             sma_level        = sma_level,
             rsi              = round(rsi, 1),
@@ -939,6 +978,24 @@ class HourlyScanner:
     @staticmethod
     def _to_df(results: list) -> pd.DataFrame:
         if not results: return pd.DataFrame()
+
+        def trade_plan(r):
+            direction = r.direction
+            price     = r.price
+            strike    = r.suggested_strike
+            signals   = " + ".join(r.stacked_signals) if r.stacked_signals else r.signal_type
+            vwap      = r.vwap
+
+            if direction == "CALL":
+                entry = f"Watch for confirmation above ${strike:.2f}"
+                if r.vwap > 0 and price > r.vwap:
+                    entry += f" with price holding above VWAP ${vwap:.2f}"
+            else:
+                entry = f"Watch for confirmation below ${strike:.2f}"
+                if r.vwap > 0 and price < r.vwap:
+                    entry += f" with price staying below VWAP ${vwap:.2f}"
+            return entry
+
         rows = [{
             "Ticker":      r.ticker,
             "Type":        r.ticker_type.upper(),
@@ -949,14 +1006,14 @@ class HourlyScanner:
             "Signals":     " · ".join(r.stacked_signals),
             "Confidence":  "⭐" * r.confidence,
             "Strike":      r.suggested_strike,
-            "Expiry":      r.suggested_expiry,
+            "Expiry":      "1-2 DTE",
+            "Plan":        trade_plan(r),
             "SMA Level":   r.sma_level,
             "RSI":         r.rsi,
             "Vol Ratio":   r.volume_ratio,
             "VWAP":        r.vwap,
             "ATR":         r.atr,
             "IV Note":     r.iv_note,
-            "Date":        r.candle_date,
             "Notes":       r.notes,
         } for r in results]
         df = pd.DataFrame(rows)

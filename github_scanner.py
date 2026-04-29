@@ -23,7 +23,7 @@ GMAIL_PASS    = os.environ.get("GMAIL_PASS",    "")
 GMAIL_TO      = os.environ.get("GMAIL_TO",      "")
 
 from scanner import (
-    IntradayScanner, HourlyScanner, PremarketScanner,
+    HourlyScanner, DailyScanner,
     ScannerConfig
 )
 
@@ -34,7 +34,6 @@ def current_session():
     h   = now.hour + now.minute / 60
     wd  = now.weekday()
     if wd >= 5:         return "WEEKEND"
-    if 4.0  <= h < 9.5: return "PRE-MARKET"
     if 9.5  <= h < 16:  return "MARKET"
     if 16.0 <= h < 20:  return "AFTER-HOURS"
     return "CLOSED"
@@ -232,34 +231,25 @@ def main():
 
     # ── Run appropriate scanners based on session ──────────────────────────────
 
-    if session == "PRE-MARKET":
-        print("🌅 Running Pre-Market scanner...")
-        pm  = PremarketScanner(cfg)
-        df  = pm.run()
-        results["Pre-Market Intelligence"] = df
-        if not df.empty:
-            all_found += len(df)
-            print(f"   Found {len(df)} tickers with moves")
-
-    elif session == "MARKET":
-        print("⚡ Running 15-min Intraday scanner...")
-        intra = IntradayScanner(cfg)
-        df    = intra.run()
-        results["15-min Intraday"] = df
+    if session == "MARKET":
+        print("⚡ Running 1-hr Intraday scanner (swing entries & breakouts)...")
+        scanner = HourlyScanner(cfg)
+        df      = scanner.run()
+        results["1-hr Intraday"] = df
         if not df.empty:
             strong = df[df["Confidence"].str.len() >= 4]
             all_found += len(strong)
             print(f"   Found {len(df)} signals ({len(strong)} are 4★+)")
 
     elif session == "AFTER-HOURS":
-        print("🌙 Running After-Hours 1-hr scanner...")
-        hourly = HourlyScanner(cfg)
-        df     = hourly.run()
-        results["After-Hours 1-hr"] = df
+        print("🌙 Running After-Hours Daily scanner (swing setups for tomorrow)...")
+        scanner = DailyScanner(cfg)
+        df      = scanner.run()
+        results["After-Hours Daily Swing"] = df
         if not df.empty:
             strong = df[df["Confidence"].str.len() >= 4]
             all_found += len(strong)
-            print(f"   Found {len(df)} setups ({len(strong)} are 4★+)")
+            print(f"   Found {len(df)} swing setups ({len(strong)} are 4★+)")
 
     # ── Email results ──────────────────────────────────────────────────────────
 
