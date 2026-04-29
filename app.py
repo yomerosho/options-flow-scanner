@@ -17,7 +17,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import pytz
 
-from scanner import IntradayScanner, HourlyScanner, PremarketScanner, ScannerConfig, Indicators
+from scanner import IntradayScanner, HourlyScanner, DailyScanner, PremarketScanner, ScannerConfig, Indicators
 
 # ── Load secrets from Streamlit Cloud if available ────────────────────────────
 def get_secret(section, key, default=""):
