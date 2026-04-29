@@ -1347,3 +1347,236 @@ class PremarketScanner:
         df.sort_values(["_conv_ord","_gap_abs"], ascending=[False,False], inplace=True)
         df.drop(columns=["_gap_abs","_conv_ord"], inplace=True)
         return df.reset_index(drop=True)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  DAILY SCANNER — After-hours swing setup finder (daily candles)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class DailySignal:
+    ticker:           str
+    ticker_type:      str
+    direction:        str
+    price:            float
+    signal_type:      str
+    confluence:       bool
+    stacked_signals:  list
+    confidence:       int
+    suggested_strike: float
+    suggested_expiry: str
+    sma_level:        str
+    rsi:              float
+    volume_ratio:     float
+    atr:              float
+    iv_note:          str
+    candle_date:      str
+    notes:            str
+    plan:             str
+
+
+class DailyScanner:
+    """
+    After-hours scanner on daily candles.
+    Finds swing setups to enter at next day's open.
+    Signals: SMA rejections, Double Bottom/Top, RSI extremes,
+             Inside bars, Volume accumulation.
+    """
+
+    def __init__(self, cfg: ScannerConfig = None):
+        self.cfg = cfg or ScannerConfig()
+        self.ind = Indicators()
+
+    def _fetch(self, ticker: str):
+        try:
+            t    = yf.Ticker(ticker)
+            info = t.info
+            hist = t.history(period="1y", interval="1d", auto_adjust=True)
+            if hist.empty or len(hist) < 60:
+                return None, None
+            return info, hist
+        except Exception as e:
+            logger.debug(f"{ticker}: {e}")
+            return None, None
+
+    def _compute(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        c, h, l, o, v = df["Close"], df["High"], df["Low"], df["Open"], df["Volume"]
+        for n in [20, 50, 100, 200]:
+            df[f"sma_{n}"] = self.ind.sma(c, n)
+        df["ema9"]     = self.ind.ema(c, 9)
+        df["ema20"]    = self.ind.ema(c, 20)
+        df["rsi"]      = self.ind.rsi(c, 14)
+        df["atr"]      = self.ind.atr(h, l, c, 14)
+        df["vol_r"]    = self.ind.vol_ratio(v, 20)
+        df["body"]     = (c - o).abs()
+        df["lo_wick"]  = pd.concat([o,c],axis=1).min(axis=1) - l
+        df["hi_wick"]  = h - pd.concat([o,c],axis=1).max(axis=1)
+        df["cl_pct"]   = (c - l) / (h - l).replace(0, np.nan)
+        df["inside_bar"] = (h < h.shift(1)) & (l > l.shift(1))
+        df["gap_pct"]    = (o - c.shift(1)) / c.shift(1)
+        df["recent_gap"] = df["gap_pct"].abs().rolling(3).max() > 0.03
+        return df.dropna(subset=["sma_50", "rsi"])
+
+    def _detect(self, ticker: str, df: pd.DataFrame,
+                info: dict, ticker_type: str) -> Optional[DailySignal]:
+        cfg  = self.cfg
+        last = df.iloc[-1]
+        prev = df.iloc[-2] if len(df) >= 2 else last
+        c    = float(last["Close"])
+        price= info.get("regularMarketPrice") or info.get("currentPrice") or c
+        avg_vol = info.get("averageVolume") or 0
+
+        if price < cfg.min_price or avg_vol < cfg.min_avg_volume:
+            return None
+        if bool(last.get("recent_gap", False)):
+            return None
+
+        rsi      = float(last["rsi"])  if not np.isnan(last["rsi"])  else 50
+        prev_rsi = float(prev["rsi"])  if not np.isnan(prev["rsi"])  else 50
+        vol_r    = float(last["vol_r"]) if not np.isnan(last["vol_r"]) else 1.0
+        body     = max(float(last["body"]), 0.01)
+        lo_wick  = float(last["lo_wick"])
+        hi_wick  = float(last["hi_wick"])
+        cl_pct   = float(last["cl_pct"]) if not np.isnan(last["cl_pct"]) else 0.5
+        ema20    = float(last["ema20"])
+        sma50    = float(last["sma_50"])
+
+        signals = []
+
+        # SMA bounces and rejections
+        for n in [20, 50, 100, 200]:
+            col = f"sma_{n}"
+            if col not in last or np.isnan(last[col]): continue
+            sma_val = float(last[col])
+            buf     = 0.012
+            touched_lo = sma_val*(1-buf) <= float(last["Low"])  <= sma_val*(1+buf)
+            touched_hi = sma_val*(1-buf) <= float(last["High"]) <= sma_val*(1+buf)
+            if touched_lo and lo_wick >= 1.5*body and cl_pct >= 0.55 and c > sma_val:
+                signals.append(("CALL", f"SMA-{n} Hammer Bounce ${sma_val:.2f}", n))
+            if touched_hi and hi_wick >= 1.5*body and cl_pct <= 0.45 and c < sma_val and c < ema20:
+                signals.append(("PUT", f"SMA-{n} Shooting Star ${sma_val:.2f}", n))
+
+        # RSI extremes
+        if rsi < 32 and rsi > prev_rsi and cl_pct > 0.5:
+            signals.append(("CALL", f"RSI Oversold {rsi:.1f} — turning up", 0))
+        if rsi > 68 and rsi < prev_rsi and cl_pct < 0.5 and c < ema20:
+            signals.append(("PUT", f"RSI Overbought {rsi:.1f} — turning down", 0))
+
+        # Double bottom/top (20-day)
+        if len(df) >= 20:
+            lows = df["Low"].values[-20:]
+            fl, sl = np.min(lows[:10]), np.min(lows[10:])
+            if abs(fl-sl)/fl < 0.01 and c > float(df["Close"].iloc[-3]) and c > float(last["ema9"]):
+                signals.append(("CALL", f"Daily Double Bottom ~${min(fl,sl):.2f}", 0))
+            highs = df["High"].values[-20:]
+            fh, sh = np.max(highs[:10]), np.max(highs[10:])
+            if abs(fh-sh)/fh < 0.01 and c < float(df["Close"].iloc[-3]) and c < float(last["ema9"]):
+                signals.append(("PUT", f"Daily Double Top ~${max(fh,sh):.2f}", 0))
+
+        # Inside bar
+        if bool(last["inside_bar"]):
+            if c > ema20 and rsi < 60:
+                signals.append(("CALL", "Inside Bar — bullish breakout setup", 0))
+            elif c < ema20 and rsi > 40:
+                signals.append(("PUT", "Inside Bar — bearish breakdown setup", 0))
+
+        # Volume accumulation/distribution
+        if vol_r > 2.0:
+            if cl_pct > 0.65 and c > ema20:
+                signals.append(("CALL", f"Volume Accumulation {vol_r:.1f}x", 0))
+            elif cl_pct < 0.35 and c < ema20:
+                signals.append(("PUT", f"Volume Distribution {vol_r:.1f}x", 0))
+
+        if not signals: return None
+
+        calls = [s for s in signals if s[0]=="CALL"]
+        puts  = [s for s in signals if s[0]=="PUT"]
+        group = calls if len(calls) >= len(puts) else puts
+        if not group: return None
+
+        direction     = group[0][0]
+        stacked       = [s[1] for s in group]
+        is_confluence = len(group) >= 2
+        sma_level     = next((f"SMA-{s[2]}" for s in group if len(s)>2 and s[2]>0), "—")
+
+        base = min(3, len(group))
+        conf = min(5, base +
+                  (1 if vol_r > 1.5 else 0) +
+                  (1 if (rsi < 35 and direction=="CALL") or (rsi > 65 and direction=="PUT") else 0))
+        if is_confluence: conf = max(conf, 3)
+
+        primary = stacked[0]
+        for p in ["Double","SMA","Inside","RSI","Volume"]:
+            m = [s for s in stacked if p in s]
+            if m: primary = m[0]; break
+
+        sig_type = f"⚡ Confluence ({len(group)} signals)" if is_confluence else primary
+        expiry   = "3-5 DTE (enter tomorrow)" if conf >= 4 else "2-3 DTE (enter tomorrow)"
+
+        # Trade plan
+        strike = snap_strike(float(c), direction, ticker)
+        if direction == "CALL":
+            plan = f"Watch for confirmation above ${strike:.2f} at tomorrow's open"
+            plan += " — high conviction, enter aggressively" if conf >= 4 else " — confirm with first 30-min candle"
+        else:
+            plan = f"Watch for confirmation below ${strike:.2f} at tomorrow's open"
+            plan += " — high conviction, enter aggressively" if conf >= 4 else " — confirm with first 30-min candle"
+
+        atr     = float(last["atr"]) if not np.isnan(last["atr"]) else 0
+        atr_pct = atr / c * 100 if c > 0 else 0
+        iv_note = "⚠️ High IV — smaller size" if atr_pct > 3 else ("✅ Low IV — options cheap" if atr_pct < 1.5 else "🟡 Moderate IV")
+
+        return DailySignal(
+            ticker=ticker, ticker_type=ticker_type, direction=direction,
+            price=round(float(c),2), signal_type=sig_type,
+            confluence=is_confluence, stacked_signals=stacked,
+            confidence=conf, suggested_strike=strike,
+            suggested_expiry=expiry, sma_level=sma_level,
+            rsi=round(rsi,1), volume_ratio=round(vol_r,2),
+            atr=round(atr,2), iv_note=iv_note,
+            candle_date=str(df.index[-1].date()),
+            notes=" + ".join(stacked) if is_confluence else stacked[0],
+            plan=plan,
+        )
+
+    def run(self, progress_cb=None) -> pd.DataFrame:
+        cfg   = self.cfg
+        all_t = ([(t,"index") for t in cfg.index_tickers] +
+                 [(t,"stock") for t in cfg.stock_tickers])
+        results = []
+        for idx, (ticker, ttype) in enumerate(all_t, 1):
+            if progress_cb: progress_cb(idx, len(all_t), ticker)
+            info, hist = self._fetch(ticker)
+            time.sleep(cfg.rate_limit_sleep)
+            if info is None: continue
+            df = self._compute(hist)
+            if df.empty: continue
+            sig = self._detect(ticker, df, info, ttype)
+            if sig:
+                results.append(sig)
+                flag = "⚡" if sig.confluence else "✅"
+                logger.info(f"{flag} DAILY {ticker} {sig.direction} {sig.confidence}★ — {sig.signal_type}")
+        return self._to_df(results)
+
+    @staticmethod
+    def _to_df(results: list) -> pd.DataFrame:
+        if not results: return pd.DataFrame()
+        rows = [{
+            "Ticker":     r.ticker, "Type": r.ticker_type.upper(),
+            "Direction":  r.direction, "Price": r.price,
+            "Signal":     r.signal_type, "Confluence": r.confluence,
+            "Signals":    " · ".join(r.stacked_signals),
+            "Confidence": "⭐" * r.confidence,
+            "Strike":     r.suggested_strike, "Expiry": r.suggested_expiry,
+            "Plan":       r.plan, "SMA Level": r.sma_level,
+            "RSI":        r.rsi, "Vol Ratio": r.volume_ratio,
+            "ATR":        r.atr, "IV Note": r.iv_note,
+            "Date":       r.candle_date, "Notes": r.notes,
+        } for r in results]
+        df = pd.DataFrame(rows)
+        df["_c"] = df["Confidence"].str.len()
+        df["_f"] = df["Confluence"].astype(int)
+        df.sort_values(["_f","_c"], ascending=[False,False], inplace=True)
+        df.drop(columns=["_c","_f"], inplace=True)
+        return df.reset_index(drop=True)
