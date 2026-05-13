@@ -711,68 +711,47 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # ── Email alerts ──────────────────────────────────────────────────────────
-    st.markdown("### 📧 Email Alerts (4★+)")
-    gmail_user  = st.text_input("Gmail address",     placeholder="you@gmail.com")
-    gmail_pass  = st.text_input("App password",      type="password", placeholder="xxxx xxxx xxxx xxxx")
-    alert_email = st.text_input("Send alerts to",    placeholder="you@gmail.com")
-    send_alerts = st.checkbox("Enable email alerts", value=True)
+    # ── Email alerts (configured via Streamlit secrets — silent) ──────────────
+    # No UI for Gmail credentials — they come from secrets.toml. We just read
+    # the defaults into the variables that downstream code expects.
+    gmail_user  = _gmail_user_default
+    gmail_pass  = _gmail_pass_default
+    alert_email = _gmail_alert_default
+    send_alerts = bool(gmail_user and gmail_pass and alert_email)
 
-    # Gmail status
-    _gmail_ready = bool(_gmail_user_default or gmail_user)
-    if _gmail_ready:
-        st.caption("✅ Gmail configured")
-    else:
-        st.caption("⚠️ Gmail not configured — alerts disabled")
     if st.session_state.email_error:
         st.error(f"Email error: {st.session_state.email_error}")
 
-    st.markdown("---")
-
     # ── Scan buttons ──────────────────────────────────────────────────────────
-    st.markdown("---")
-    st.markdown("### 🦙 Alpaca API (Real-Time)")
-    with st.expander("Configure Alpaca Keys", expanded=False):
-        ak = st.text_input("API Key ID",  type="password",
-                           placeholder="PKXXXXXXXXXXXXXXXXXX (or set in Streamlit secrets)", key="ak_input")
-        sk = st.text_input("Secret Key",  type="password",
-                           placeholder="XXXXXXXXXXXXXXXXXXXXXXXX", key="sk_input")
-        ua = st.checkbox("Use Alpaca real-time data", value=False, key="ua_input")
-        if st.button("Save Alpaca Keys", key="save_alpaca"):
-            st.session_state.alpaca_key_val    = ak
-            st.session_state.alpaca_secret_val = sk
-            st.session_state.use_alpaca_val    = ua
-            st.success("✅ Alpaca keys saved!")
-
-        # Check status — prefer secrets over manually entered keys
-        _ak_active = _alpaca_key_default or st.session_state.alpaca_key_val
-        if _ak_active:
-            st.success("✅ Alpaca connected — real-time data active")
-        else:
-            st.caption("📊 Using yfinance (15-min delayed)")
-
-    st.markdown("---")
     scan_all_btn   = st.button("🚀 Scan All", type="primary")
     st.markdown("---")
     scan_btn       = st.button("⚡ 1-hr Intraday Scan")
     daily_scan_btn = st.button("🌙 After-Hours Daily Scan")
 
+    # ── Connection status (compact, informational only) ───────────────────────
+    _alpaca_ready = bool(_alpaca_key_default)
+    _gmail_ready  = bool(gmail_user and gmail_pass)
     st.markdown(f"""
-    <div style='margin-top:12px;font-size:0.7rem;color:#c0ccd8;line-height:1.9;'>
-    <b style='color:#e0e8f0'>15-min signals</b><br>
+    <div style='margin-top:14px;padding:10px 12px;background:#363b4f;border:1px solid #525a72;border-radius:8px;font-family:JetBrains Mono,monospace;font-size:0.7rem;line-height:1.7;'>
+      {"🟢" if _alpaca_ready else "⚪"} Alpaca: {"connected" if _alpaca_ready else "yfinance fallback"}<br>
+      {"🟢" if _gmail_ready else "⚪"} Email alerts: {"active" if _gmail_ready else "disabled"}
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style='margin-top:12px;font-size:0.7rem;color:#c8d2e0;line-height:1.9;'>
+    <b style='color:#f0f4fb'>15-min signals</b><br>
     • VWAP Reclaim / Rejection<br>
     • Opening Range Breakout<br>
     • Double Bottom / Top<br>
     • EMA20 Reclaim / Rejection<br>
     • RSI Oversold / Overbought<br>
     • Volume Surge<br><br>
-    <b style='color:#e0e8f0'>Last alert:</b> {st.session_state.last_alert}<br>
-    <b style='color:#e0e8f0'>Watchlist:</b> {len(st.session_state.index_list)} indices · {len(st.session_state.stock_list)} stocks<br><br>
-    <i style='color:#b8c2d2'>Pre-market: every 5 min · Market: every 15 min · After-hours: every 10 min</i><br><i style='color:#b8c2d2'>yfinance · 15-min delay · Not financial advice</i>
+    <b style='color:#f0f4fb'>Last alert:</b> {st.session_state.last_alert}<br>
+    <b style='color:#f0f4fb'>Watchlist:</b> {len(st.session_state.index_list)} indices · {len(st.session_state.stock_list)} stocks<br><br>
+    <i style='color:#a8b3c8'>Pre-market: every 5 min · Market: every 15 min · After-hours: every 10 min</i><br><i style='color:#a8b3c8'>Not financial advice</i>
     </div>""", unsafe_allow_html=True)
 
-# ── Use secrets as fallback if sidebar fields are empty ──────────────────────
-# This means secrets work silently without ever being shown in the UI
+# ── Use secrets as fallback (already loaded above, kept for explicitness) ────
 if not gmail_user  and _gmail_user_default:  gmail_user  = _gmail_user_default
 if not gmail_pass  and _gmail_pass_default:  gmail_pass  = _gmail_pass_default
 if not alert_email and _gmail_alert_default: alert_email = _gmail_alert_default
