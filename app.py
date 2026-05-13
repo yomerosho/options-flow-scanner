@@ -46,9 +46,10 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=JetBrains+Mono:wght@300;400;600&display=swap');
-html, body, [class*="css"] { font-family:'Syne',sans-serif; background:#080b10; color:#d4dce8; }
+html, body, [class*="css"] { font-family:'Syne',sans-serif; background:#2a2f3d; color:#f0f4fb; }
+.stApp { background:#2a2f3d; }
 
-section[data-testid="stSidebar"] { background:#0c1018; border-right:1px solid #1a2030; }
+section[data-testid="stSidebar"] { background:#22273a; border-right:1px solid #454b62; }
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] span,
@@ -62,48 +63,65 @@ section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3 { color:#ffffff !important; }
 
 section[data-testid="stSidebar"] .stTextInput input,
-section[data-testid="stSidebar"] .stTextArea textarea {
-  color:#e0e8f0 !important;
-  background:#131922 !important;
-  border:1px solid #2a3a50 !important;
+section[data-testid="stSidebar"] .stTextArea textarea,
+section[data-testid="stSidebar"] .stNumberInput input {
+  color:#f0f4fb !important;
+  background:#2f3548 !important;
+  border:1px solid #525a72 !important;
 }
 
 section[data-testid="stSidebar"] .stTextInput input::placeholder,
 section[data-testid="stSidebar"] .stTextArea textarea::placeholder {
-  color:#4a6a80 !important;
+  color:#8a92a8 !important;
 }
 
-section[data-testid="stSidebar"] .stSelectbox div,
+/* Selectbox / Multiselect dropdown — dark bg, light text */
+section[data-testid="stSidebar"] [data-baseweb="select"] > div {
+  background-color:#2f3548 !important;
+  border:1px solid #525a72 !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="select"] * { color:#f0f4fb !important; }
+section[data-testid="stSidebar"] [data-baseweb="tag"] {
+  background-color:#6a5a90 !important;
+  color:#f0f4fb !important;
+}
+
 section[data-testid="stSidebar"] .stExpander summary p,
-section[data-testid="stSidebar"] .stExpander p { color:#e0e8f0 !important; }
+section[data-testid="stSidebar"] .stExpander p { color:#f0f4fb !important; }
 
-section[data-testid="stSidebar"] .stCheckbox label p { color:#e0e8f0 !important; }
+section[data-testid="stSidebar"] .stCheckbox label p { color:#f0f4fb !important; }
 
-section[data-testid="stSidebar"] [data-testid="stSliderLabel"] { color:#e0e8f0 !important; }
+section[data-testid="stSidebar"] [data-testid="stSliderLabel"],
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] { color:#f0f4fb !important; }
 
-[data-testid="metric-container"] { background:#0e1520; border:1px solid #1a2535; border-radius:10px; padding:16px 20px; }
-[data-testid="metric-container"] label { color:#4a5a70 !important; font-size:0.7rem; letter-spacing:.1em; text-transform:uppercase; }
-[data-testid="metric-container"] [data-testid="stMetricValue"] { font-family:'JetBrains Mono',monospace; font-size:1.8rem; font-weight:600; color:#4af0c4; }
+/* Tab styling — matching GexMetrics */
+.stTabs [data-baseweb="tab-list"] { background: #22273a; border-bottom: 1px solid #525a72; }
+.stTabs [data-baseweb="tab"] { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 12px 24px; color: #a0a8c0; }
+.stTabs [aria-selected="true"] { background: #363b4f !important; color: #bc8cff !important; border-bottom: 2px solid #bc8cff !important; }
 
-.stButton > button { font-family:'JetBrains Mono',monospace; font-size:0.82rem; border-radius:6px; padding:10px 0; width:100%; border:none; background:linear-gradient(135deg,#1a6b50,#0d4a38); color:#4af0c4; transition:all .2s; }
-.stButton > button:hover { background:linear-gradient(135deg,#22876a,#125240); }
+[data-testid="metric-container"] { background:#363b4f; border:1px solid #525a72; border-radius:10px; padding:16px 20px; }
+[data-testid="metric-container"] label { color:#a0a8c0 !important; font-size:0.7rem; letter-spacing:.1em; text-transform:uppercase; }
+[data-testid="metric-container"] [data-testid="stMetricValue"] { font-family:'JetBrains Mono',monospace; font-size:1.8rem; font-weight:600; color:#bc8cff; }
 
-.signal-call { border-left:3px solid #4af0c4; background:#0a1f18; padding:14px 18px; border-radius:0 8px 8px 0; margin:6px 0; }
-.signal-put  { border-left:3px solid #f04a6a; background:#1f0a10; padding:14px 18px; border-radius:0 8px 8px 0; margin:6px 0; }
-.badge-call  { display:inline-block; background:#0d3d28; color:#4af0c4; font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:600; padding:2px 10px; border-radius:20px; }
-.badge-put   { display:inline-block; background:#3d0d1a; color:#f04a6a; font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:600; padding:2px 10px; border-radius:20px; }
-.badge-index { display:inline-block; background:#1a2a50; color:#6ab0f0; font-family:'JetBrains Mono',monospace; font-size:0.65rem; padding:1px 8px; border-radius:10px; }
-.badge-stock { display:inline-block; background:#2a1a40; color:#c083f8; font-family:'JetBrains Mono',monospace; font-size:0.65rem; padding:1px 8px; border-radius:10px; }
+.stButton > button { font-family:'JetBrains Mono',monospace; font-size:0.82rem; border-radius:6px; padding:10px 0; width:100%; border:none; background:linear-gradient(135deg,#4a2a80,#2a1560); color:#d4b8ff; transition:all .2s; }
+.stButton > button:hover { background:linear-gradient(135deg,#5a3a98,#3a2070); }
 
-.status-bar { background:#0e1520; border:1px solid #1a2535; border-radius:8px; padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; margin-bottom:12px; }
-.countdown  { background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:8px 16px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:#4af0c4; text-align:center; margin-bottom:12px; }
-.wl-section { background:#0e1520; border:1px solid #1a2535; border-radius:8px; padding:12px 14px; margin:8px 0; font-family:'JetBrains Mono',monospace; font-size:0.72rem; }
-.wl-ticker  { display:inline-block; background:#131922; color:#d4dce8; border:1px solid #2a3a50; border-radius:4px; padding:2px 8px; margin:2px; font-size:0.72rem; }
+.signal-call { border-left:3px solid #4af0c4; background:#1a3d2a; padding:14px 18px; border-radius:0 8px 8px 0; margin:6px 0; }
+.signal-put  { border-left:3px solid #f04a6a; background:#3d1a25; padding:14px 18px; border-radius:0 8px 8px 0; margin:6px 0; }
+.badge-call  { display:inline-block; background:#2a5a48; color:#4af0c4; font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:600; padding:2px 10px; border-radius:20px; }
+.badge-put   { display:inline-block; background:#4a1f2a; color:#f04a6a; font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:600; padding:2px 10px; border-radius:20px; }
+.badge-index { display:inline-block; background:#3a4870; color:#6ab0f0; font-family:'JetBrains Mono',monospace; font-size:0.65rem; padding:1px 8px; border-radius:10px; }
+.badge-stock { display:inline-block; background:#4a3a70; color:#bc8cff; font-family:'JetBrains Mono',monospace; font-size:0.65rem; padding:1px 8px; border-radius:10px; }
+
+.status-bar { background:#363b4f; border:1px solid #525a72; border-radius:8px; padding:10px 18px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; margin-bottom:12px; }
+.countdown  { background:#363b4f; border:1px solid #525a72; border-radius:8px; padding:8px 16px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:#4af0c4; text-align:center; margin-bottom:12px; }
+.wl-section { background:#363b4f; border:1px solid #525a72; border-radius:8px; padding:12px 14px; margin:8px 0; font-family:'JetBrains Mono',monospace; font-size:0.72rem; }
+.wl-ticker  { display:inline-block; background:#454b62; color:#d4dce8; border:1px solid #7a6a98; border-radius:4px; padding:2px 8px; margin:2px; font-size:0.72rem; }
 
 /* Confluence card */
 .signal-confluence-call {
   border-left: 4px solid #4af0c4;
-  background: linear-gradient(135deg, #0a2a1f 0%, #0d1f30 100%);
+  background: linear-gradient(135deg, #1f4a3a 0%, #3a2f55 100%);
   padding: 16px 18px;
   border-radius: 0 8px 8px 0;
   margin: 8px 0;
@@ -111,7 +129,7 @@ section[data-testid="stSidebar"] [data-testid="stSliderLabel"] { color:#e0e8f0 !
 }
 .signal-confluence-put {
   border-left: 4px solid #f04a6a;
-  background: linear-gradient(135deg, #2a0a10 0%, #1f0d20 100%);
+  background: linear-gradient(135deg, #4a1f25 0%, #1f0d20 100%);
   padding: 16px 18px;
   border-radius: 0 8px 8px 0;
   margin: 8px 0;
@@ -119,7 +137,7 @@ section[data-testid="stSidebar"] [data-testid="stSliderLabel"] { color:#e0e8f0 !
 }
 .confluence-badge {
   display:inline-block;
-  background: linear-gradient(90deg,#1a4a38,#1a3a50);
+  background: linear-gradient(90deg,#2a5a48,#1a3a50);
   color:#4af0c4;
   font-family:'JetBrains Mono',monospace;
   font-size:0.72rem;
@@ -131,25 +149,25 @@ section[data-testid="stSidebar"] [data-testid="stSliderLabel"] { color:#e0e8f0 !
 }
 .stacked-pill {
   display:inline-block;
-  background:#131922;
-  color:#8090a0;
+  background:#454b62;
+  color:#b8c2d2;
   font-family:'JetBrains Mono',monospace;
   font-size:0.65rem;
   padding:1px 8px;
   border-radius:10px;
   margin:2px;
-  border:1px solid #1a2535;
+  border:1px solid #525a72;
 }
 .body-confirm {
   display:inline-block;
-  background:#0d3020;
+  background:#1a4a38;
   color:#4af0c4;
   font-size:0.65rem;
   padding:1px 8px;
   border-radius:10px;
   font-family:'JetBrains Mono',monospace;
 }
-hr { border-color:#1a2030; }
+hr { border-color:#525a72; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -192,17 +210,17 @@ def send_alert(df, gmail_user, gmail_pass, to_email):
         for _, r in strong.iterrows():
             col = "#4af0c4" if r["Direction"]=="CALL" else "#f04a6a"
             rows += f"<tr><td style='padding:8px;font-weight:bold;color:{col}'>{r['Ticker']}</td><td style='padding:8px;color:{col}'>{r['Direction']}</td><td style='padding:8px'>${r['Price']}</td><td style='padding:8px'>${r['Strike']}</td><td style='padding:8px'>{r['Signal']}</td><td style='padding:8px'>{r['Confidence']}</td><td style='padding:8px'>{r['Notes']}</td></tr>"
-        html = f"""<html><body style='background:#080b10;color:#d4dce8;font-family:monospace;'>
+        html = f"""<html><body style='background:#2a2f3d;color:#d4dce8;font-family:monospace;'>
         <div style='max-width:720px;margin:0 auto;padding:24px;'>
-        <h2 style='color:#4af0c4;border-bottom:1px solid #1a2535;padding-bottom:12px;'>🎯 Options Flow Alert — 15-min Scan</h2>
-        <p style='color:#8090a0;font-size:0.85rem;'>{len(strong)} high-confidence setup(s) — {datetime.now(ET).strftime('%H:%M ET')}</p>
-        <table style='width:100%;border-collapse:collapse;background:#0e1520;border:1px solid #1a2535;'>
-        <tr style='background:#131922;color:#5a7a90;font-size:0.75rem;'>
+        <h2 style='color:#bc8cff;border-bottom:1px solid #525a72;padding-bottom:12px;'>🎯 Options Flow Alert — 15-min Scan</h2>
+        <p style='color:#b8c2d2;font-size:0.85rem;'>{len(strong)} high-confidence setup(s) — {datetime.now(ET).strftime('%H:%M ET')}</p>
+        <table style='width:100%;border-collapse:collapse;background:#363b4f;border:1px solid #525a72;'>
+        <tr style='background:#454b62;color:#a8b3c8;font-size:0.75rem;'>
         <th style='padding:10px;text-align:left'>TICKER</th><th style='padding:10px;text-align:left'>DIR</th>
         <th style='padding:10px;text-align:left'>PRICE</th><th style='padding:10px;text-align:left'>STRIKE</th>
         <th style='padding:10px;text-align:left'>SIGNAL</th><th style='padding:10px;text-align:left'>CONF</th>
         <th style='padding:10px;text-align:left'>NOTES</th></tr>{rows}</table>
-        <p style='color:#2a3a50;font-size:0.7rem;margin-top:16px;'>15-min delayed · Not financial advice</p>
+        <p style='color:#7a6a98;font-size:0.7rem;margin-top:16px;'>15-min delayed · Not financial advice</p>
         </div></body></html>"""
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"🎯 Options Alert: {len(strong)} setup(s) — {datetime.now(ET).strftime('%H:%M ET')}"
@@ -222,16 +240,16 @@ def send_alert(df, gmail_user, gmail_pass, to_email):
 def build_export_html(df_calls, df_puts, scan_type, scan_time):
     def card_rows(df, direction):
         if df.empty:
-            return f'<p style="color:#5a7a90;font-family:monospace;padding:12px;">No {direction} setups found.</p>'
+            return f'<p style="color:#a8b3c8;font-family:monospace;padding:12px;">No {direction} setups found.</p>'
         rows = ""
         for _, r in df.iterrows():
             col     = "#4af0c4" if direction=="CALL" else "#f04a6a"
-            bg      = "#0a1f18" if direction=="CALL" else "#1f0a10"
+            bg      = "#1a3d2a" if direction=="CALL" else "#3d1a25"
             border  = col
             icon    = "▲" if direction=="CALL" else "▼"
-            dir_bg  = "#0d3d28" if direction=="CALL" else "#3d0d1a"
+            dir_bg  = "#2a5a48" if direction=="CALL" else "#4a1f2a"
             is_conf = bool(r.get("Confluence", False))
-            conf_tag= '<span style="background:#1a4a38;color:#4af0c4;font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px;">⚡ CONFLUENCE</span>' if is_conf else ""
+            conf_tag= '<span style="background:#2a5a48;color:#4af0c4;font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:4px;">⚡ CONFLUENCE</span>' if is_conf else ""
             signals = str(r.get("Signals","") or r.get("Notes",""))
             expiry  = str(r.get("Expiry",""))
             iv      = str(r.get("IV Note",""))
@@ -242,23 +260,23 @@ def build_export_html(df_calls, df_puts, scan_type, scan_time):
             if signals and is_conf:
                 for s in signals.split(" · "):
                     if s.strip():
-                        pills += f'<span style="background:#131922;color:#8090a0;font-size:0.65rem;padding:1px 7px;border-radius:8px;margin:2px;border:1px solid #1a2535;display:inline-block;">{s.strip()}</span>'
+                        pills += f'<span style="background:#454b62;color:#b8c2d2;font-size:0.65rem;padding:1px 7px;border-radius:8px;margin:2px;border:1px solid #525a72;display:inline-block;">{s.strip()}</span>'
             rows += f"""
             <div style="border-left:4px solid {border};background:{bg};padding:14px 18px;border-radius:0 8px 8px 0;margin:8px 0;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
                 <span style="font-family:monospace;font-size:1.05rem;font-weight:700;color:#e0e8f0;">{r["Ticker"]}</span>
-                <span style="background:#2a1a40;color:#c083f8;font-size:0.65rem;padding:1px 8px;border-radius:8px;">{r.get("Type","")}</span>
+                <span style="background:#4a3a70;color:#bc8cff;font-size:0.65rem;padding:1px 8px;border-radius:8px;">{r.get("Type","")}</span>
                 <span style="background:{dir_bg};color:{col};font-size:0.72rem;font-weight:700;padding:2px 10px;border-radius:20px;">{icon} {direction}</span>
                 {conf_tag}
-                <span style="color:#8090a0;font-size:0.82rem;margin-left:4px;">${r["Price"]}</span>
+                <span style="color:#b8c2d2;font-size:0.82rem;margin-left:4px;">${r["Price"]}</span>
                 <span style="margin-left:auto;">{r["Confidence"]}</span>
               </div>
-              <div style="font-size:0.9rem;color:#c0d0e0;font-weight:600;margin-bottom:4px;">
+              <div style="font-size:0.9rem;color:#e8edf5;font-weight:600;margin-bottom:4px;">
                 {r["Signal"]} → <span style="color:{col};">Strike ${r["Strike"]}</span>
-                {"&nbsp;<span style='color:#8090a0;font-size:0.78rem;'>(" + expiry + ")</span>" if expiry else ""}
+                {"&nbsp;<span style='color:#b8c2d2;font-size:0.78rem;'>(" + expiry + ")</span>" if expiry else ""}
               </div>
               {"<div style='margin:5px 0;'>" + pills + "</div>" if pills else ""}
-              <div style="font-size:0.75rem;color:#5a7a90;margin-top:4px;">
+              <div style="font-size:0.75rem;color:#a8b3c8;margin-top:4px;">
                 {"VWAP $" + vwap + " &nbsp;|&nbsp; " if vwap not in ["—","nan",""] else ""}RSI {r["RSI"]} &nbsp;|&nbsp; Vol {r["Vol Ratio"]}x{"&nbsp;|&nbsp; SMA: " + sma if sma != "—" else ""}
               </div>
               <div style="font-size:0.74rem;margin-top:4px;color:{iv_col};">{iv}</div>
@@ -270,11 +288,11 @@ def build_export_html(df_calls, df_puts, scan_type, scan_time):
     put_rows  = card_rows(df_puts,  "PUT")
 
     return f"""<!DOCTYPE html><html>
-    <body style="background:#080b10;color:#d4dce8;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;">
+    <body style="background:#2a2f3d;color:#d4dce8;font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;">
     <div style="max-width:900px;margin:0 auto;padding:24px;">
-      <div style="border-bottom:1px solid #1a2535;padding-bottom:16px;margin-bottom:20px;">
-        <h1 style="margin:0;font-size:1.5rem;font-weight:800;color:#4af0c4;">🎯 Options Flow — {scan_type}</h1>
-        <p style="color:#5a7a90;font-family:monospace;font-size:0.8rem;margin:6px 0 0 0;">
+      <div style="border-bottom:1px solid #525a72;padding-bottom:16px;margin-bottom:20px;">
+        <h1 style="margin:0;font-size:1.5rem;font-weight:800;color:#bc8cff;">🎯 Options Flow — {scan_type}</h1>
+        <p style="color:#a8b3c8;font-family:monospace;font-size:0.8rem;margin:6px 0 0 0;">
           Scanned: {scan_time} &nbsp;·&nbsp; {total} setup(s) &nbsp;·&nbsp; 3★+ only
         </p>
       </div>
@@ -288,7 +306,7 @@ def build_export_html(df_calls, df_puts, scan_type, scan_time):
           {put_rows}
         </td>
       </tr></table>
-      <div style="border-top:1px solid #1a2535;margin-top:24px;padding-top:12px;font-size:0.68rem;color:#2a3a50;text-align:center;">
+      <div style="border-top:1px solid #525a72;margin-top:24px;padding-top:12px;font-size:0.68rem;color:#7a6a98;text-align:center;">
         Options Flow Dashboard · yfinance · Not financial advice · Educational use only
       </div>
     </div></body></html>"""
@@ -355,9 +373,9 @@ def build_chart(ticker):
                 line=dict(color=color, width=1.4, dash=dash), hoverinfo="skip"))
 
         fig.update_layout(
-            template="plotly_dark", paper_bgcolor="#0e1520", plot_bgcolor="#0e1520",
+            template="plotly_dark", paper_bgcolor="#363b4f", plot_bgcolor="#363b4f",
             xaxis=dict(showgrid=False, rangeslider_visible=False),
-            yaxis=dict(showgrid=True, gridcolor="#1a2535", domain=[0.25,1.0]),
+            yaxis=dict(showgrid=True, gridcolor="#525a72", domain=[0.25,1.0]),
             yaxis2=dict(showgrid=False, overlaying="y", side="right", domain=[0,0.2]),
             legend=dict(bgcolor="rgba(0,0,0,0)", font_color="#5a6a80", font_size=10),
             margin=dict(l=8,r=8,t=24,b=8), height=440,
@@ -412,9 +430,9 @@ def build_daily_chart(ticker):
                 fig.add_trace(go.Scatter(x=df.index, y=df[col_name], name=label,
                     line=dict(color=color, width=1.3, dash=dash), hoverinfo="skip"))
         fig.update_layout(
-            template="plotly_dark", paper_bgcolor="#0e1520", plot_bgcolor="#0e1520",
+            template="plotly_dark", paper_bgcolor="#363b4f", plot_bgcolor="#363b4f",
             xaxis=dict(showgrid=False, rangeslider_visible=False),
-            yaxis=dict(showgrid=True, gridcolor="#1a2535", domain=[0.25,1.0]),
+            yaxis=dict(showgrid=True, gridcolor="#525a72", domain=[0.25,1.0]),
             yaxis2=dict(showgrid=False, overlaying="y", side="right", domain=[0,0.2]),
             legend=dict(bgcolor="rgba(0,0,0,0)", font_color="#5a6a80", font_size=10),
             margin=dict(l=8,r=8,t=24,b=8), height=440,
@@ -445,23 +463,23 @@ def signal_card(row):
 
     icon     = "▲" if d=="CALL" else "▼"
     dir_col  = "#4af0c4" if d=="CALL" else "#f04a6a"
-    dir_bg   = "#0d3d28" if d=="CALL" else "#3d0d1a"
-    card_bg  = "#0a1f18" if d=="CALL" else "#1f0a10"
+    dir_bg   = "#2a5a48" if d=="CALL" else "#4a1f2a"
+    card_bg  = "#1a3d2a" if d=="CALL" else "#3d1a25"
     border   = "#4af0c4" if d=="CALL" else "#f04a6a"
-    type_bg  = "#1a2a50" if t=="INDEX" else "#2a1a40"
-    type_col = "#6ab0f0" if t=="INDEX" else "#c083f8"
+    type_bg  = "#3a4870" if t=="INDEX" else "#4a3a70"
+    type_col = "#6ab0f0" if t=="INDEX" else "#bc8cff"
 
     if is_conf:
-        card_bg = "linear-gradient(135deg,#0a2a1f,#0d1f30)" if d=="CALL" else "linear-gradient(135deg,#2a0a10,#1f0d20)"
+        card_bg = "linear-gradient(135deg,#1f4a3a,#3a2f55)" if d=="CALL" else "linear-gradient(135deg,#4a1f25,#1f0d20)"
 
-    conf_badge = '<span style="background:linear-gradient(90deg,#1a4a38,#1a3a50);color:#4af0c4;font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #4af0c430;">⚡ CONFLUENCE</span>' if is_conf else ""
-    body_html  = '<span style="background:#0d3020;color:#4af0c4;font-size:0.65rem;padding:1px 8px;border-radius:10px;font-family:JetBrains Mono,monospace;">✅ Body Close</span>' if body_ok else ""
+    conf_badge = '<span style="background:linear-gradient(90deg,#2a5a48,#1a3a50);color:#4af0c4;font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #4af0c430;">⚡ CONFLUENCE</span>' if is_conf else ""
+    body_html  = '<span style="background:#1a4a38;color:#4af0c4;font-size:0.65rem;padding:1px 8px;border-radius:10px;font-family:JetBrains Mono,monospace;">✅ Body Close</span>' if body_ok else ""
 
     pills = ""
     if stacked and is_conf:
         for s in stacked.split(" · "):
             if s.strip():
-                pills += f'<span style="background:#131922;color:#8090a0;font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;margin:2px;border:1px solid #1a2535;">{s.strip()}</span>'
+                pills += f'<span style="background:#454b62;color:#b8c2d2;font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;margin:2px;border:1px solid #525a72;">{s.strip()}</span>'
 
     return (
         f'<div style="border-left:4px solid {border};background:{card_bg};padding:14px 18px;border-radius:0 8px 8px 0;margin:6px 0;">' +
@@ -470,13 +488,13 @@ def signal_card(row):
         f'<span style="background:{type_bg};color:{type_col};font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;">{t}</span>' +
         f'<span style="background:{dir_bg};color:{dir_col};font-family:JetBrains Mono,monospace;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;">{icon} {d}</span>' +
         conf_badge + body_html +
-        f'<span style="font-family:JetBrains Mono,monospace;font-size:0.82rem;color:#8090a0;margin-left:4px;">${price}</span>' +
+        f'<span style="font-family:JetBrains Mono,monospace;font-size:0.82rem;color:#b8c2d2;margin-left:4px;">${price}</span>' +
         f'<span style="margin-left:auto;font-size:0.82rem;">{conf}</span>' +
         f'</div>' +
-        f'<div style="font-size:0.88rem;color:#c0d0e0;margin-bottom:5px;font-weight:600;">{signal} → <span style="color:{dir_col};">Strike ${strike}</span></div>' +
+        f'<div style="font-size:0.88rem;color:#e8edf5;margin-bottom:5px;font-weight:600;">{signal} → <span style="color:{dir_col};">Strike ${strike}</span></div>' +
         (f'<div style="margin:5px 0;">{pills}</div>' if pills else "") +
-        f'<div style="font-size:0.75rem;color:#5a7a90;margin-top:4px;">VWAP ${vwap} | RSI {rsi} | Vol {vol}x</div>' +
-        (f'<div style="font-size:0.78rem;color:#f5c842;margin-top:5px;padding:4px 8px;background:#1a1a0a;border-radius:4px;">📋 {plan}</div>' if plan else "") +
+        f'<div style="font-size:0.75rem;color:#a8b3c8;margin-top:4px;">VWAP ${vwap} | RSI {rsi} | Vol {vol}x</div>' +
+        (f'<div style="font-size:0.78rem;color:#f5c842;margin-top:5px;padding:4px 8px;background:#3a3a1a;border-radius:4px;">📋 {plan}</div>' if plan else "") +
         f'</div>'
     )
 
@@ -504,23 +522,23 @@ def daily_signal_card(row):
 
     icon     = "▲" if d=="CALL" else "▼"
     dir_col  = "#4af0c4" if d=="CALL" else "#f04a6a"
-    dir_bg   = "#0d3d28" if d=="CALL" else "#3d0d1a"
-    card_bg  = "#0a1f18" if d=="CALL" else "#1f0a10"
+    dir_bg   = "#2a5a48" if d=="CALL" else "#4a1f2a"
+    card_bg  = "#1a3d2a" if d=="CALL" else "#3d1a25"
     border   = "#4af0c4" if d=="CALL" else "#f04a6a"
-    type_bg  = "#1a2a50" if t=="INDEX" else "#2a1a40"
-    type_col = "#6ab0f0" if t=="INDEX" else "#c083f8"
+    type_bg  = "#3a4870" if t=="INDEX" else "#4a3a70"
+    type_col = "#6ab0f0" if t=="INDEX" else "#bc8cff"
     iv_color = "#f04a6a" if "High" in iv_note else ("#4af0c4" if "Low" in iv_note else "#f5c842")
 
     conf_badge = ""
     if is_conf:
-        card_bg = "linear-gradient(135deg,#0a2a1f,#0d1f30)" if d=="CALL" else "linear-gradient(135deg,#2a0a10,#1f0d20)"
-        conf_badge = '<span style="background:linear-gradient(90deg,#1a4a38,#1a3a50);color:#4af0c4;font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #4af0c430;">⚡ CONFLUENCE</span>'
+        card_bg = "linear-gradient(135deg,#1f4a3a,#3a2f55)" if d=="CALL" else "linear-gradient(135deg,#4a1f25,#1f0d20)"
+        conf_badge = '<span style="background:linear-gradient(90deg,#2a5a48,#1a3a50);color:#4af0c4;font-family:JetBrains Mono,monospace;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;border:1px solid #4af0c430;">⚡ CONFLUENCE</span>'
 
     pills = ""
     if stacked and is_conf:
         for s in stacked.split(" · "):
             if s.strip():
-                pills += f'<span style="background:#131922;color:#8090a0;font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;margin:2px;border:1px solid #1a2535;">{s.strip()}</span>'
+                pills += f'<span style="background:#454b62;color:#b8c2d2;font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;margin:2px;border:1px solid #525a72;">{s.strip()}</span>'
 
     return (
         f'<div style="border-left:4px solid {border};background:{card_bg};padding:14px 18px;border-radius:0 8px 8px 0;margin:6px 0;">' +
@@ -529,12 +547,12 @@ def daily_signal_card(row):
         f'<span style="background:{type_bg};color:{type_col};font-family:JetBrains Mono,monospace;font-size:0.65rem;padding:1px 8px;border-radius:10px;">{t}</span>' +
         f'<span style="background:{dir_bg};color:{dir_col};font-family:JetBrains Mono,monospace;font-size:0.72rem;font-weight:600;padding:2px 10px;border-radius:20px;">{icon} {d}</span>' +
         conf_badge +
-        f'<span style="font-family:JetBrains Mono,monospace;font-size:0.82rem;color:#8090a0;margin-left:4px;">${price}</span>' +
+        f'<span style="font-family:JetBrains Mono,monospace;font-size:0.82rem;color:#b8c2d2;margin-left:4px;">${price}</span>' +
         f'<span style="margin-left:auto;font-size:0.82rem;">{conf}</span>' +
         f'</div>' +
-        f'<div style="font-size:0.88rem;color:#c0d0e0;margin-bottom:5px;font-weight:600;">{signal} → <span style="color:{dir_col};">Strike ${strike}</span> <span style="color:#8090a0;font-size:0.78rem;">({expiry})</span></div>' +
+        f'<div style="font-size:0.88rem;color:#e8edf5;margin-bottom:5px;font-weight:600;">{signal} → <span style="color:{dir_col};">Strike ${strike}</span> <span style="color:#b8c2d2;font-size:0.78rem;">({expiry})</span></div>' +
         (f'<div style="margin:5px 0;">{pills}</div>' if pills else "") +
-        f'<div style="font-size:0.75rem;color:#5a7a90;margin-top:4px;">SMA: {sma_lv} | RSI {rsi} | Vol {vol}x | ATR ${atr}</div>' +
+        f'<div style="font-size:0.75rem;color:#a8b3c8;margin-top:4px;">SMA: {sma_lv} | RSI {rsi} | Vol {vol}x | ATR ${atr}</div>' +
         f'<div style="font-size:0.74rem;margin-top:4px;color:{iv_color};">{iv_note}</div>' +
         f'</div>'
     )
@@ -624,11 +642,11 @@ with st.sidebar:
         email_lbl  = st.session_state.user_email or "—"
         extras     = len(st.session_state.user_tickers)
         st.markdown(f"""
-        <div style='background:#0e1520;border:1px solid #1a2535;border-radius:8px;
+        <div style='background:#363b4f;border:1px solid #525a72;border-radius:8px;
                     padding:10px 14px;font-family:"JetBrains Mono",monospace;font-size:0.75rem;'>
           <span style='color:#4af0c4;'>👤 {name_lbl}</span><br>
-          <span style='color:#8090a0;'>📧 {email_lbl}</span><br>
-          <span style='color:#8090a0;'>📈 {extras} personal ticker(s) added</span>
+          <span style='color:#b8c2d2;'>📧 {email_lbl}</span><br>
+          <span style='color:#b8c2d2;'>📈 {extras} personal ticker(s) added</span>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -750,7 +768,7 @@ with st.sidebar:
     • Volume Surge<br><br>
     <b style='color:#e0e8f0'>Last alert:</b> {st.session_state.last_alert}<br>
     <b style='color:#e0e8f0'>Watchlist:</b> {len(st.session_state.index_list)} indices · {len(st.session_state.stock_list)} stocks<br><br>
-    <i style='color:#8090a0'>Pre-market: every 5 min · Market: every 15 min · After-hours: every 10 min</i><br><i style='color:#8090a0'>yfinance · 15-min delay · Not financial advice</i>
+    <i style='color:#b8c2d2'>Pre-market: every 5 min · Market: every 15 min · After-hours: every 10 min</i><br><i style='color:#b8c2d2'>yfinance · 15-min delay · Not financial advice</i>
     </div>""", unsafe_allow_html=True)
 
 # ── Use secrets as fallback if sidebar fields are empty ──────────────────────
@@ -795,15 +813,15 @@ _total_tickers = len(st.session_state.get("stock_list",[])) + \
 st.markdown(f"""
 <div style='padding:8px 0 12px 0;'>
   <h1 style='font-family:"Syne",sans-serif;font-size:2rem;font-weight:800;
-             background:linear-gradient(90deg,#4af0c4,#4a9cf0);
+             background:linear-gradient(90deg,#bc8cff,#4af0c4);
              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
              margin:0;letter-spacing:-0.02em;'>Options Flow Dashboard</h1>
-  <p style='color:#3a5070;font-family:"JetBrains Mono",monospace;
+  <p style='color:#a896d0;font-family:"JetBrains Mono",monospace;
             font-size:0.78rem;margin:4px 0 0 0;'>
     1-hr intraday · daily swing setups · calls & puts · email alerts
     {"&nbsp;·&nbsp;<span style='color:#4af0c4;font-weight:600;'>" + _greeting + "</span>" if _greeting else ""}
   </p>
-  <p style='color:#2a3a50;font-family:"JetBrains Mono",monospace;
+  <p style='color:#7a6a98;font-family:"JetBrains Mono",monospace;
             font-size:0.72rem;margin:2px 0 0 0;'>
     Scanning {_total_tickers} tickers
     {"&nbsp;·&nbsp;" + str(_extra_count) + " personal ticker(s) added" if _extra_count else ""}
@@ -817,7 +835,7 @@ now_et = datetime.now(ET).strftime("%H:%M ET")
 
 colors = {"open":"#4af0c4","pre-market":"#f5c842","closed":"#f04a6a","weekend":"#f04a6a"}
 icons  = {"open":"●","pre-market":"◐","closed":"●","weekend":"●"}
-col    = colors.get(status_lbl,"#8090a0")
+col    = colors.get(status_lbl,"#b8c2d2")
 icon   = icons.get(status_lbl,"●")
 extra  = (f" | Closes in {mins_close} min" if is_open else
           f" | Opens in {mins_open} min" if status_lbl=="pre-market" else "")
@@ -826,9 +844,9 @@ auto_badge = " | 🔄 Auto-scan ON" if auto_on else ""
 st.markdown(f"""
 <div class="status-bar">
   <span style="color:{col}">{icon} {status_lbl.upper()}</span>
-  <span style="color:#3a5070"> | </span>
+  <span style="color:#a896d0"> | </span>
   <span style="color:#d4dce8">{now_et}</span>
-  <span style="color:#3a5070">{extra}</span>
+  <span style="color:#a896d0">{extra}</span>
   <span style="color:#4af0c4">{auto_badge}</span>
 </div>""", unsafe_allow_html=True)
 
@@ -1059,16 +1077,16 @@ with tab1:
                 d      = row["Direction"]
                 border = "#4af0c4" if d=="CALL" else "#f04a6a"
                 st.markdown(f"""
-                <div style='background:#0e1520;border-left:3px solid {border};border-radius:0 8px 8px 0;padding:16px 20px;margin-top:8px;'>
+                <div style='background:#363b4f;border-left:3px solid {border};border-radius:0 8px 8px 0;padding:16px 20px;margin-top:8px;'>
                   <div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:0.85rem;'>
-                    <div><span style='color:#5a7a90'>Signal:</span> <b>{row['Signal']}</b></div>
-                    <div><span style='color:#5a7a90'>RSI:</span> <b>{row['RSI']}</b></div>
-                    <div><span style='color:#5a7a90'>Volume:</span> <b>{row['Vol Ratio']}x</b></div>
-                    <div><span style='color:#5a7a90'>VWAP:</span> <b>${row['VWAP']}</b></div>
-                    <div><span style='color:#5a7a90'>Strike:</span> <b>${row['Strike']}</b></div>
-                    <div><span style='color:#5a7a90'>Confidence:</span> <b>{row['Confidence']}</b></div>
+                    <div><span style='color:#a8b3c8'>Signal:</span> <b>{row['Signal']}</b></div>
+                    <div><span style='color:#a8b3c8'>RSI:</span> <b>{row['RSI']}</b></div>
+                    <div><span style='color:#a8b3c8'>Volume:</span> <b>{row['Vol Ratio']}x</b></div>
+                    <div><span style='color:#a8b3c8'>VWAP:</span> <b>${row['VWAP']}</b></div>
+                    <div><span style='color:#a8b3c8'>Strike:</span> <b>${row['Strike']}</b></div>
+                    <div><span style='color:#a8b3c8'>Confidence:</span> <b>{row['Confidence']}</b></div>
                   </div>
-                  <div style='margin-top:10px;padding-top:10px;border-top:1px solid #1a2535;font-size:0.82rem;color:#8090a0;'>{row['Notes']}</div>
+                  <div style='margin-top:10px;padding-top:10px;border-top:1px solid #525a72;font-size:0.82rem;color:#b8c2d2;'>{row['Notes']}</div>
                 </div>""", unsafe_allow_html=True)
         # ── Export section ─────────────────────────────────────────────────────
         st.markdown("---")
@@ -1104,9 +1122,9 @@ with tab1:
 
     else:
         st.markdown("""
-        <div style='text-align:center;padding:60px 0;color:#2a3a50;'>
+        <div style='text-align:center;padding:60px 0;color:#7a6a98;'>
           <div style='font-size:3rem;'>⚡</div>
-          <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#3a5070;'>
+          <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#a896d0;'>
             Click <b style='color:#4af0c4'>⚡ 1-hr Intraday Scan</b> in the sidebar
           </div>
           <div style='font-size:0.78rem;margin-top:6px;'>Best between 9:30 AM – 3:45 PM ET</div>
@@ -1117,7 +1135,7 @@ with tab1:
 # ════════════════════════════════════════════════
 with tab2:
     st.markdown("""
-    <div style='background:#0e1520;border:1px solid #1a2535;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;font-size:0.78rem;color:#8090a0;'>
+    <div style='background:#363b4f;border:1px solid #525a72;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-family:"JetBrains Mono",monospace;font-size:0.78rem;color:#b8c2d2;'>
       🌙 <b style='color:#e0e8f0'>After-Hours 1-hr Scanner</b> — finds next-day setups on 1-hour candles.<br>
       Run after 4:00 PM ET or on weekends · looks back 5 days (~30-40 bars).<br>
       Signals: VWAP · EMA9/20 reclaims · Double Bottom/Top · SMA touches · RSI extremes · Inside bars · Volume
@@ -1177,18 +1195,18 @@ with tab2:
                 iv_color = "#f04a6a" if "High" in row.get("IV Note","") else (
                            "#4af0c4" if "Low"  in row.get("IV Note","") else "#f5c842")
                 st.markdown(f"""
-                <div style='background:#0e1520;border-left:3px solid {border};border-radius:0 8px 8px 0;padding:16px 20px;margin-top:8px;'>
+                <div style='background:#363b4f;border-left:3px solid {border};border-radius:0 8px 8px 0;padding:16px 20px;margin-top:8px;'>
                   <div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:0.85rem;margin-bottom:10px;'>
-                    <div><span style='color:#5a7a90'>Signal:</span> <b>{row['Signal']}</b></div>
-                    <div><span style='color:#5a7a90'>SMA Level:</span> <b>{row['SMA Level']}</b></div>
-                    <div><span style='color:#5a7a90'>RSI:</span> <b>{row['RSI']}</b></div>
-                    <div><span style='color:#5a7a90'>Volume:</span> <b>{row['Vol Ratio']}x avg</b></div>
-                    <div><span style='color:#5a7a90'>ATR:</span> <b>${row['ATR']}</b></div>
-                    <div><span style='color:#5a7a90'>VWAP:</span> <b>${row.get('VWAP','—')}</b></div>
-                    <div><span style='color:#5a7a90'>Confidence:</span> <b>{row['Confidence']}</b></div>
+                    <div><span style='color:#a8b3c8'>Signal:</span> <b>{row['Signal']}</b></div>
+                    <div><span style='color:#a8b3c8'>SMA Level:</span> <b>{row['SMA Level']}</b></div>
+                    <div><span style='color:#a8b3c8'>RSI:</span> <b>{row['RSI']}</b></div>
+                    <div><span style='color:#a8b3c8'>Volume:</span> <b>{row['Vol Ratio']}x avg</b></div>
+                    <div><span style='color:#a8b3c8'>ATR:</span> <b>${row['ATR']}</b></div>
+                    <div><span style='color:#a8b3c8'>VWAP:</span> <b>${row.get('VWAP','—')}</b></div>
+                    <div><span style='color:#a8b3c8'>Confidence:</span> <b>{row['Confidence']}</b></div>
                   </div>
-                  <div style='padding-top:10px;border-top:1px solid #1a2535;font-size:0.82rem;color:{iv_color};'>{row.get('IV Note','')}</div>
-                  <div style='margin-top:6px;font-size:0.78rem;color:#8090a0;'>{row['Notes']}</div>
+                  <div style='padding-top:10px;border-top:1px solid #525a72;font-size:0.82rem;color:{iv_color};'>{row.get('IV Note','')}</div>
+                  <div style='margin-top:6px;font-size:0.78rem;color:#b8c2d2;'>{row['Notes']}</div>
                 </div>""", unsafe_allow_html=True)
         # ── Export section ─────────────────────────────────────────────────────
         st.markdown("---")
@@ -1224,9 +1242,9 @@ with tab2:
 
     else:
         st.markdown("""
-        <div style='text-align:center;padding:60px 0;color:#2a3a50;'>
+        <div style='text-align:center;padding:60px 0;color:#7a6a98;'>
           <div style='font-size:3rem;'>🌙</div>
-          <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#3a5070;'>
+          <div style='font-family:"JetBrains Mono",monospace;font-size:0.95rem;margin-top:12px;color:#a896d0;'>
             Click <b style='color:#4af0c4'>After-Hours Scan (1-hr)</b> in the sidebar
           </div>
           <div style='font-size:0.78rem;margin-top:6px;'>
